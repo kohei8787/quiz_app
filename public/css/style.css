@@ -1,0 +1,13 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #f5f7fb;
+  color: #222;
+}
+
+.container {
+  max-width: 800px;
+  margin: 80px auto;
+  padding: 24px;
+  text-align: center;
+}
