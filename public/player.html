@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>参加者画面</title>
+
+  <!-- 共通の見た目を読み込むCSS -->
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <!-- 画面タイトル -->
+    <h1>参加者画面</h1>
+
+    <!-- 現在の状態を表示する場所 -->
+    <p id="status">接続中...</p>
+
+    <!-- 参加受付中に表示するエリア -->
+    <div id="joinSection" class="card">
+      <h2>チーム参加</h2>
+
+      <!-- チーム名入力欄 -->
+      <input id="teamNameInput" type="text" placeholder="チーム名を入力" />
+
+      <!-- 参加ボタン -->
+      <button id="joinButton">参加</button>
+
+      <!-- 参加結果メッセージ -->
+      <p id="joinMessage"></p>
+    </div>
+
+    <!-- 問題表示用のエリア -->
+    <div id="questionView" class="card" style="display: none;">
+      <h2>現在の問題</h2>
+      <p id="currentQuestionText">まだ問題は表示されていません</p>
+      <p id="timerText">残り時間: --秒</p>
+      <p id="scoreText">現在の得点: --点</p>
+
+      <!-- 回答入力エリア -->
+      <div id="answerArea" style="display: none;">
+        <!-- 回答入力欄。0〜100の整数を想定 -->
+        <input id="answerInput" type="number" min="0" max="100" placeholder="0〜100を入力" />
+
+        <!-- スライダー入力 -->
+        <label for="answerSlider">スライダーで選択</label>
+        <input id="answerSlider" type="range" min="0" max="100" value="50" />
+        <p>選択値: <span id="sliderValue">50</span>%</p>
+
+        <!-- 回答送信ボタン -->
+        <button id="submitAnswerButton">決定</button>
+
+        <!-- 回答受付結果メッセージ -->
+        <p id="answerMessage"></p>
+      </div>
+    </div>
+
+    <!-- 回答公開・正解発表用のエリア -->
+    <div id="resultView" class="card" style="display: none;">
+      <h2 id="resultTitle">回答公開</h2>
+      <p id="correctAnswerText">正解: --</p>
+      <div id="revealedAnswersSection">
+        <h3>全チームの回答</h3>
+        <div id="gaugeContainer"></div>
+      </div>
+      <div id="myTeamResult" style="display: none; margin-top: 12px; text-align: left;"></div>
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- 参加者画面専用のJavaScript -->
+  <script src="/js/player.js?v=1"></script>
+</body>
+</html>

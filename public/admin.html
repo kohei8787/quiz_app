@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理画面</title>
+
+  <!-- 共通の見た目を読み込むCSS -->
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <!-- 画面タイトル -->
+    <h1>管理画面</h1>
+
+    <!-- 現在のイベント状態を表示する場所 -->
+    <p id="status">接続中...</p>
+
+    <!-- 管理者が進行を操作するボタン群 -->
+    <div class="card">
+      <h2>イベント操作</h2>
+
+      <!-- イベントを開始する -->
+      <button id="startEventButton" style="display: none;">イベント開始</button>
+
+      <!-- 次の問題へ進む -->
+      <button id="nextQuestionButton" style="display: none;">次の問題へ</button>
+
+      <!-- 回答受付を手動で終了する -->
+      <button id="closeAnswersButton" style="display: none;">回答受付終了</button>
+
+      <!-- 全チームの回答を表示する -->
+      <button id="revealAnswersButton" style="display: none;">回答公開</button>
+
+      <!-- 正解を表示する -->
+      <button id="revealCorrectAnswerButton" style="display: none;">正解発表</button>
+      <!-- 残り時間を延長する -->
+      <input id="extendTimeInput" type="number" min="1" value="10" placeholder="秒" style="width: 100px; margin: 8px 0; display: none;" />
+      <button id="extendTimeButton" style="display: none;">残り時間延長</button>
+      <!-- アンケート結果を表示する -->
+      <button id="showSurveyResultsButton" style="display: none;">アンケート結果公開</button>
+
+      <!-- 参加受付を再開する -->
+      <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
+
+      <!-- イベント全体を終了する -->
+      <button id="finishEventButton" style="display: none;">イベント終了</button>
+    </div>
+
+    <!-- 現在出題中の問題に関する情報 -->
+    <div class="card">
+      <h2>現在の問題</h2>
+
+      <!-- 現在の問題文 -->
+      <p id="currentQuestionText">まだ問題は表示されていません</p>
+
+      <!-- 回答済みチーム数 -->
+      <p id="answeredCountText">回答済み: 0件</p>
+
+      <!-- 残り時間 -->
+      <p id="timerText">残り時間: --秒</p>
+
+      <!-- 正解表示 -->
+      <p id="correctAnswerText">正解: --</p>
+    </div>
+
+    <!-- 回答公開後に表示する一覧 -->
+    <div class="card">
+      <h2>回答一覧</h2>
+      <ul id="answerList"></ul>
+    </div>
+
+    <!-- 現在の順位を表示する一覧 -->
+    <div class="card">
+      <h2>順位表</h2>
+      <ul id="rankingList"></ul>
+    </div>
+  </main>
+
+  <!-- Socket.ioのクライアント用ライブラリ -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- 管理画面専用のJavaScript -->
+  <script src="/js/admin.js?v=1"></script>
+</body>
+</html>
