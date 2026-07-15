@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>参加者画面</title>
 
-  <!-- 共通の見た目を読み込むCSS -->
-  <link rel="stylesheet" href="/css/style.css" />
+  <!-- 参加者画面専用のCSS -->
+  <link rel="stylesheet" href="/css/player.css" />
 </head>
 <body>
   <main class="container">
@@ -18,15 +18,30 @@
 
     <!-- 参加受付中に表示するエリア -->
     <div id="joinSection" class="card">
-      <h2>チーム参加</h2>
+      <h2 id="joinSectionTitle">チーム参加</h2>
+
+      <!-- 管理者が指定した参加コード（参加後は非表示） -->
+      <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
 
       <!-- チーム名入力欄 -->
       <input id="teamNameInput" type="text" placeholder="チーム名を入力" />
 
-      <!-- 参加ボタン -->
-      <button id="joinButton">参加</button>
+      <!-- 座席番号入力欄（管理者だけが一覧で確認する） -->
+      <input id="seatNumberInput" type="text" placeholder="座席番号を入力" />
 
-      <!-- 参加結果メッセージ -->
+      <!-- 未参加時の参加ボタン -->
+      <button id="joinButton" type="button">参加</button>
+
+      <!-- 参加後・編集前に表示。「チーム情報を変更」で編集モードへ -->
+      <button id="editTeamButton" type="button" style="display: none;">チーム情報を変更</button>
+
+      <!-- 編集モード時の決定・キャンセル -->
+      <div id="teamEditActions" style="display: none;">
+        <button id="confirmTeamButton" type="button">決定</button>
+        <button id="cancelTeamButton" type="button">キャンセル</button>
+      </div>
+
+      <!-- 参加・更新結果メッセージ -->
       <p id="joinMessage"></p>
     </div>
 
@@ -65,11 +80,25 @@
       </div>
       <div id="myTeamResult" style="display: none; margin-top: 12px; text-align: left;"></div>
     </div>
+
+    <!-- アンケート結果公開用のエリア（管理画面から遷移） -->
+    <div id="surveyResultsView" class="card" style="display: none;">
+      <h2>アンケート結果公開</h2>
+      <p>グラフを表示します</p>
+      <img src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
+    </div>
+
+    <!-- 順位発表用のエリア（アンケート結果公開の次に表示） -->
+    <div id="rankingView" class="card" style="display: none;">
+      <h2>順位発表</h2>
+      <p id="myRankText">あなたの順位: --</p>
+      <ul id="rankingList"></ul>
+    </div>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=1"></script>
+  <script src="/js/player.js?v=5"></script>
 </body>
 </html>

@@ -5,75 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>管理画面</title>
 
-  <!-- 共通の見た目を読み込むCSS -->
-  <link rel="stylesheet" href="/css/style.css" />
+  <!-- 管理画面専用のCSS（PC横長レイアウト） -->
+  <link rel="stylesheet" href="/css/admin.css" />
 </head>
 <body>
-  <main class="container">
-    <!-- 画面タイトル -->
-    <h1>管理画面</h1>
+  <!-- admin-container: 管理画面用のレイアウト（admin.cssで定義） -->
+  <main class="admin-container">
 
-    <!-- 現在のイベント状態を表示する場所 -->
-    <p id="status">接続中...</p>
+    <!-- 画面上部：タイトルと現在のイベント状態 -->
+    <header class="admin-header">
+      <!-- 画面タイトル -->
+      <h1>管理画面</h1>
 
-    <!-- 管理者が進行を操作するボタン群 -->
-    <div class="card">
-      <h2>イベント操作</h2>
+      <!-- 現在のイベント状態を表示する場所 -->
+      <p id="status">接続中...</p>
+    </header>
 
-      <!-- イベントを開始する -->
-      <button id="startEventButton" style="display: none;">イベント開始</button>
+    <!--
+      PC横長画面向けの2カラムレイアウト
+      左カラム：操作系　右カラム：情報表示系
+    -->
+    <div class="admin-grid">
 
-      <!-- 次の問題へ進む -->
-      <button id="nextQuestionButton" style="display: none;">次の問題へ</button>
+      <!-- ===== 左カラム：管理者の操作エリア ===== -->
+      <section class="admin-column admin-column--left">
 
-      <!-- 回答受付を手動で終了する -->
-      <button id="closeAnswersButton" style="display: none;">回答受付終了</button>
+        <!-- 管理者が進行を操作するボタン群 -->
+        <div class="card">
+          <h2>イベント操作</h2>
 
-      <!-- 全チームの回答を表示する -->
-      <button id="revealAnswersButton" style="display: none;">回答公開</button>
+          <!-- ボタンを横並びに配置するラッパー（admin.cssで flex 指定） -->
+          <div class="admin-actions">
 
-      <!-- 正解を表示する -->
-      <button id="revealCorrectAnswerButton" style="display: none;">正解発表</button>
-      <!-- 残り時間を延長する -->
-      <input id="extendTimeInput" type="number" min="1" value="10" placeholder="秒" style="width: 100px; margin: 8px 0; display: none;" />
-      <button id="extendTimeButton" style="display: none;">残り時間延長</button>
-      <!-- アンケート結果を表示する -->
-      <button id="showSurveyResultsButton" style="display: none;">アンケート結果公開</button>
+            <!-- イベントを開始する -->
+            <button id="startEventButton" style="display: none;">イベント開始</button>
 
-      <!-- 参加受付を再開する -->
-      <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
+            <!-- 次の問題へ進む -->
+            <button id="nextQuestionButton" style="display: none;">次の問題へ</button>
 
-      <!-- イベント全体を終了する -->
-      <button id="finishEventButton" style="display: none;">イベント終了</button>
-    </div>
+            <!-- 回答受付を手動で終了する -->
+            <button id="closeAnswersButton" style="display: none;">回答受付終了</button>
 
-    <!-- 現在出題中の問題に関する情報 -->
-    <div class="card">
-      <h2>現在の問題</h2>
+            <!-- 全チームの回答を表示する -->
+            <button id="revealAnswersButton" style="display: none;">回答公開</button>
 
-      <!-- 現在の問題文 -->
-      <p id="currentQuestionText">まだ問題は表示されていません</p>
+            <!-- 正解を表示する -->
+            <button id="revealCorrectAnswerButton" style="display: none;">正解発表</button>
 
-      <!-- 回答済みチーム数 -->
-      <p id="answeredCountText">回答済み: 0件</p>
+            <!-- 残り時間を延長する（秒数入力＋ボタン） -->
+            <input id="extendTimeInput" type="number" min="1" value="10" placeholder="秒" style="display: none;" />
+            <button id="extendTimeButton" style="display: none;">残り時間延長</button>
 
-      <!-- 残り時間 -->
-      <p id="timerText">残り時間: --秒</p>
+            <!-- アンケート結果を表示する -->
+            <button id="showSurveyResultsButton" style="display: none;">アンケート結果公開</button>
 
-      <!-- 正解表示 -->
-      <p id="correctAnswerText">正解: --</p>
-    </div>
+            <!-- 順位を発表する（アンケート結果公開の次へ遷移） -->
+            <button id="showRankingButton" style="display: none;">順位発表</button>
 
-    <!-- 回答公開後に表示する一覧 -->
-    <div class="card">
-      <h2>回答一覧</h2>
-      <ul id="answerList"></ul>
-    </div>
+            <!-- 参加受付を再開する -->
+            <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
 
-    <!-- 現在の順位を表示する一覧 -->
-    <div class="card">
-      <h2>順位表</h2>
-      <ul id="rankingList"></ul>
+            <!-- イベント全体を終了する -->
+            <button id="finishEventButton" style="display: none;">イベント終了</button>
+
+          </div>
+        </div>
+
+        <!-- 現在の問題に関する情報 -->
+        <div class="card admin-question-info">
+          <h2>現在の問題</h2>
+
+          <!-- 現在の問題文 -->
+          <p id="currentQuestionText">まだ問題は表示されていません</p>
+
+          <!-- 回答済みチーム数 -->
+          <p id="answeredCountText">回答済み: 0件</p>
+
+          <!-- 残り時間 -->
+          <p id="timerText">残り時間: --秒</p>
+
+          <!-- 正解表示 -->
+          <p id="correctAnswerText">正解: --</p>
+        </div>
+
+        <!-- 参加コードの設定（参加者が入力する合言葉） -->
+        <div class="card">
+          <h2>参加コード設定</h2>
+          <p class="admin-hint">参加者はこのコードを入力しないと参加できません。</p>
+
+          <!-- 未設定のとき／「コードを変更」押下後だけ表示する編集エリア -->
+          <div id="joinCodeEditArea">
+            <!-- 参加コード入力欄 -->
+            <input id="joinCodeInput" type="text" placeholder="例: QUIZ2026" autocomplete="off" />
+
+            <!-- 参加コードをサーバーへ保存する -->
+            <button id="setJoinCodeButton" type="button">コードを設定</button>
+
+            <!-- 変更モードのときだけ表示。押すと変更をやめて設定済み表示に戻る -->
+            <button id="cancelJoinCodeButton" type="button" style="display: none;">キャンセル</button>
+          </div>
+
+          <!-- 設定済みのときに表示する確認エリア（編集不可） -->
+          <div id="joinCodeLockedArea" style="display: none;">
+            <p id="joinCodeStatusText" class="join-code-status">設定済み</p>
+            <p id="currentJoinCodeText">現在の参加コード: （未設定）</p>
+            <!-- 押すと編集エリアに切り替わる -->
+            <button id="changeJoinCodeButton" type="button">コードを変更</button>
+          </div>
+
+          <!-- 設定結果メッセージ -->
+          <p id="joinCodeMessage"></p>
+        </div>
+
+      </section>
+
+      <!-- ===== 右カラム：リアルタイム情報の表示エリア ===== -->
+      <section class="admin-column admin-column--right">
+
+        <!-- 参加チーム一覧（座席番号つき・管理者のみ表示） -->
+        <div class="card">
+          <h2>参加チーム（座席番号つき）</h2>
+          <ul id="teamList"></ul>
+        </div>
+
+        <!-- 回答公開後に表示する一覧 -->
+        <div class="card">
+          <h2>回答一覧</h2>
+          <ul id="answerList"></ul>
+        </div>
+
+        <!-- 現在の順位を表示する一覧 -->
+        <div class="card">
+          <h2>順位表</h2>
+          <ul id="rankingList"></ul>
+        </div>
+
+      </section>
+
     </div>
   </main>
 
@@ -81,6 +149,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=1"></script>
+  <script src="/js/admin.js?v=5"></script>
 </body>
 </html>

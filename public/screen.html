@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>スクリーン表示</title>
 
-  <!-- 共通の見た目を読み込むCSS -->
-  <link rel="stylesheet" href="/css/style.css" />
+  <!-- スクリーン表示画面専用のCSS -->
+  <link rel="stylesheet" href="/css/screen.css" />
 </head>
 <body>
   <main class="container">
@@ -40,17 +40,19 @@
       <h2 id="resultTitle">回答公開</h2>
       <p id="correctAnswerText">正解: --</p>
       <div id="gaugeContainer" style="margin: 24px 0;"></div>
-
-      <!-- 最終順位表示 -->
-      <h3>順位表</h3>
-      <ul id="rankingList"></ul>
     </div>
 
-    <!-- アンケート結果公開用のエリア -->
+    <!-- アンケート結果公開用のエリア（管理画面から遷移） -->
     <div id="surveyResultsView" class="card" style="display: none;">
       <h2>アンケート結果公開</h2>
       <p>グラフを表示します</p>
       <img src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
+    </div>
+
+    <!-- 順位発表用のエリア（アンケート結果公開の次に表示） -->
+    <div id="rankingView" class="card" style="display: none;">
+      <h2>順位発表</h2>
+      <ul id="rankingList"></ul>
     </div>
   </main>
 
@@ -58,6 +60,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=1"></script>
+  <script src="/js/screen.js?v=3"></script>
 </body>
 </html>

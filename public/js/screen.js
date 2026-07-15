@@ -13,6 +13,7 @@ const waitingSection = document.getElementById("waitingSection");
 const questionView = document.getElementById("questionView");
 const resultView = document.getElementById("resultView");
 const surveyResultsView = document.getElementById("surveyResultsView");
+const rankingView = document.getElementById("rankingView");
 const resultTitle = document.getElementById("resultTitle");
 
 socket.on("connect", () => {
@@ -33,11 +34,13 @@ socket.on("stateUpdated", (state) => {
   const showQuestionView = state.status === "question" || state.status === "answer_closed" || state.status === "started";
   const showResultView = state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
+  const showRankingView = state.status === "ranking_revealed";
 
   waitingSection.style.display = isWaiting ? "block" : "none";
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
+  rankingView.style.display = showRankingView ? "block" : "none";
 
   if (state.status === "waiting" || state.status === "finished") {
     statusEl.textContent = "参加受付中";
@@ -54,6 +57,8 @@ socket.on("stateUpdated", (state) => {
     statusEl.textContent = "正解発表";
   } else if (state.status === "survey_results") {
     statusEl.textContent = "アンケート結果公開";
+  } else if (state.status === "ranking_revealed") {
+    statusEl.textContent = "順位発表";
   } else {
     statusEl.textContent = "イベント進行中";
   }
@@ -74,22 +79,32 @@ socket.on("stateUpdated", (state) => {
 
   if (state.status === "answers_revealed") {
     resultTitle.textContent = "回答公開";
-  } else if (state.status === "correct_revealed" || state.status === "finished") {
+  } else if (state.status === "correct_revealed") {
     resultTitle.textContent = "正解発表";
   }
 
-  renderGauge(state);
-
-  // 順位表はイベント終了時のみ表示
-  rankingList.innerHTML = "";
-  if (state.status === "finished") {
-    state.ranking.forEach((team, index) => {
-      const li = document.createElement("li");
-      li.textContent = `${index + 1}位 ${team.name} - ${team.score}点`;
-      rankingList.appendChild(li);
-    });
+  // ゲージは回答公開・正解発表のときだけ描画
+  if (showResultView) {
+    renderGauge(state);
   }
+
+  // 順位発表画面の描画
+  renderRanking(state);
 });
+
+function renderRanking(state) {
+  rankingList.innerHTML = "";
+
+  if (state.status !== "ranking_revealed") {
+    return;
+  }
+
+  state.ranking.forEach((team, index) => {
+    const li = document.createElement("li");
+    li.textContent = `${index + 1}位 ${team.name} - ${team.score}点`;
+    rankingList.appendChild(li);
+  });
+}
 
 function renderGauge(state) {
   gaugeContainer.innerHTML = "";
@@ -98,9 +113,8 @@ function renderGauge(state) {
     return;
   }
 
-  const showCorrectPin = state.status === "correct_revealed" || state.status === "survey_results";
+  const showCorrectPin = state.status === "correct_revealed";
   const showDetails = state.status === "answers_revealed";
-  const isStaticSurvey = state.status === "survey_results";
   const correctValue = state.correctAnswer !== null ? state.correctAnswer : 0;
 
   const wrapper = document.createElement("div");
@@ -145,7 +159,7 @@ function renderGauge(state) {
   if (showCorrectPin) {
     const correctPin = document.createElement("div");
     correctPin.className = "gauge-pin correct";
-    correctPin.style.left = isStaticSurvey ? `${correctValue}%` : "0%";
+    correctPin.style.left = "0%";
 
     const correctLabel = document.createElement("div");
     correctLabel.className = "gauge-label";
@@ -155,11 +169,9 @@ function renderGauge(state) {
     wrapper.appendChild(correctPin);
     wrapper.appendChild(correctLabel);
 
-    if (!isStaticSurvey) {
-      requestAnimationFrame(() => {
-        correctPin.style.left = `${correctValue}%`;
-      });
-    }
+    requestAnimationFrame(() => {
+      correctPin.style.left = `${correctValue}%`;
+    });
   }
 
   gaugeContainer.appendChild(wrapper);

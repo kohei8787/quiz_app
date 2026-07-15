@@ -1,0 +1,149 @@
+/*
+  スクリーン表示画面（screen.html）専用のCSS
+  このファイルだけ読み込めば、スクリーン画面の見た目が完成する
+*/
+
+/* ページ全体の基本設定 */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #f5f7fb;
+  color: #222;
+}
+
+/* メインコンテンツの幅と中央寄せ */
+.container {
+  max-width: 480px;
+  width: min(100%, 480px);
+  margin: 0 auto;
+  padding: 16px 12px 40px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* 白いカード型のボックス */
+.card {
+  background: white;
+  padding: 20px 16px;
+  margin-top: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 画面が狭いときの調整 */
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
+
+  .container {
+    padding: 12px 10px 28px;
+  }
+
+  .card {
+    padding: 16px 12px;
+  }
+
+  h1 {
+    font-size: 1.35rem;
+  }
+
+  h2 {
+    font-size: 1.1rem;
+  }
+}
+
+/*
+  回答公開時のゲージ（棒グラフ風の表示）
+  screen.js が動的に生成する要素用
+*/
+.gauge-track-wrapper {
+  position: relative;
+  margin: 16px 0 8px;
+  padding-top: 24px;
+}
+
+.gauge-track {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  border-radius: 999px;
+}
+
+.gauge-pin {
+  position: absolute;
+  top: -6px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 14px solid #dc2626;
+  transform: translateX(-50%);
+  transition: left 1.2s ease-out;
+}
+
+.gauge-pin.correct {
+  border-top-color: #16a34a;
+}
+
+.gauge-label {
+  position: absolute;
+  top: -24px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  white-space: nowrap;
+  color: #111827;
+  transition: left 1.2s ease-out;
+}
+
+.gauge-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #475569;
+  margin-top: 6px;
+}
+
+/* チーム名と回答値を横並びにする行（screen.js が生成） */
+.result-team-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+/* 順位発表画面のリスト */
+#rankingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+#rankingList li {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 1.2rem;
+}
+
+/* 1位を強調表示 */
+#rankingList li:first-child {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  font-weight: bold;
+}

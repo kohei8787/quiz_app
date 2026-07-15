@@ -1,0 +1,201 @@
+/*
+  管理画面（admin.html）専用のCSS
+  このファイルだけ読み込めば、管理画面の見た目が完成する
+  PC横長画面を想定したレイアウト
+*/
+
+/* ページ全体の基本設定 */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #f5f7fb;
+  color: #222;
+}
+
+/* 白いカード型のボックス */
+.card {
+  background: white;
+  padding: 20px 16px;
+  margin-top: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 管理画面全体：PC想定の横幅（最大1200px） */
+.admin-container {
+  max-width: 1200px;
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding: 24px 32px 40px;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+/* 画面上部：タイトルとステータスを横並びにする */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+/* 接続状態・イベント状態の表示 */
+.admin-header #status {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+/*
+  メインの2カラムレイアウト
+  - 左：操作ボタンと現在の問題
+  - 右：回答一覧と順位表
+*/
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* 各カラム内のカード同士の間隔 */
+.admin-column .card + .card {
+  margin-top: 20px;
+}
+
+/* 操作ボタンを横並び・折り返し表示（PC向け） */
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 管理画面のボタン */
+.admin-container button {
+  width: auto;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin: 0;
+  min-width: 140px;
+  font-size: 16px;
+}
+
+/* 残り時間延長の入力欄 */
+.admin-container #extendTimeInput {
+  width: 80px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin: 0;
+  font-size: 16px;
+}
+
+/* 回答一覧・順位表のリスト */
+.admin-container ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-container ul li {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.admin-container ul li:nth-child(odd) {
+  background: #f1f5f9;
+}
+
+/* カード内の見出し */
+.admin-container .card h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+/* 現在の問題エリアの情報表示 */
+.admin-question-info p {
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+#currentQuestionText {
+  font-size: 1.05rem;
+  font-weight: bold;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #2563eb;
+}
+
+/* 参加コード設定エリアの説明文 */
+.admin-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* 参加コード入力欄 */
+.admin-container #joinCodeInput {
+  width: 100%;
+  max-width: 280px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin: 0 8px 8px 0;
+  font-size: 16px;
+}
+
+/* 参加コード設定ボタンは横並びで入力欄の隣に置く想定 */
+.admin-container #setJoinCodeButton {
+  margin-bottom: 8px;
+}
+
+#joinCodeMessage,
+#currentJoinCodeText {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+#currentJoinCodeText {
+  font-weight: bold;
+  color: #2563eb;
+}
+
+/* 設定済みラベル */
+.join-code-status {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #16a34a;
+}
+
+#joinCodeLockedArea {
+  margin-top: 4px;
+}
+
+.admin-container #changeJoinCodeButton {
+  margin-top: 12px;
+}
+
+.admin-container #cancelJoinCodeButton {
+  margin-left: 8px;
+  margin-bottom: 8px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}

@@ -13,11 +13,11 @@ const server = http.createServer(app);
 // Socket.ioを使ってリアルタイム通信を有効化
 const io = new Server(server);
 
-// publicフォルダの中身をそのまま配信する
+// publicフォルダの中身をそのまま配信する（例: /admin.html）
 app.use(express.static(path.join(__dirname, "public")));
 
-// dataフォルダの中身をそのまま配信する
-app.use(express.static(path.join(__dirname, "data")));
+// dataフォルダを /data 配下で配信する（例: /data/image/graph-placeholder.svg）
+app.use("/data", express.static(path.join(__dirname, "data")));
 
 // 問題データをJSONファイルから読み込む
 const questions = JSON.parse(
@@ -27,10 +27,13 @@ const questions = JSON.parse(
 // タイマー停止用にsetIntervalのIDを保持する
 let timerInterval = null;
 
+// 参加時に必要なコード（管理者が設定する。一般参加者には放送しない）
+let joinCode = "";
+
 // イベント全体の状態をまとめて管理する
 const eventState = {
-  status: "waiting", // waiting / started / question / answer_closed / answers_revealed / correct_revealed / survey_results / finished
-  teams: [], // 参加チーム一覧
+  status: "waiting", // waiting / started / question / answer_closed / answers_revealed / correct_revealed / survey_results / ranking_revealed / finished
+  teams: [], // 参加チーム一覧（各チーム: id, name, seatNumber, score）
   hasQuestionStarted: false, // 1度でも問題を出したか
   currentQuestionIndex: -1, // 現在の問題番号（配列index）
   currentQuestion: null, // 画面表示用の現在問題
@@ -43,9 +46,37 @@ const eventState = {
   ranking: [] // 現在の順位表
 };
 
+// 座席番号を除いたチーム情報を作る（参加者・スクリーン向け）
+function toPublicTeam(team) {
+  return {
+    id: team.id,
+    name: team.name,
+    score: team.score
+  };
+}
+
+// 一般画面向けの状態（座席番号・参加コードは含めない）
+function getPublicState() {
+  return {
+    ...eventState,
+    teams: eventState.teams.map(toPublicTeam),
+    ranking: eventState.ranking.map(toPublicTeam)
+  };
+}
+
+// 管理画面向けの状態（座席番号・現在の参加コードを含める）
+function getAdminState() {
+  return {
+    ...eventState,
+    joinCode
+  };
+}
+
 // 全クライアントへ最新状態を送る
+// 管理者には座席番号付き、それ以外には座席番号なしで送る
 function broadcastState() {
-  io.emit("stateUpdated", eventState);
+  io.except("admins").emit("stateUpdated", getPublicState());
+  io.to("admins").emit("stateUpdated", getAdminState());
 }
 
 // タイマー停止
@@ -153,17 +184,84 @@ function updateScores() {
 
 // ブラウザ接続時の処理
 io.on("connection", (socket) => {
-  // 接続した画面へ現在状態を送る
-  socket.emit("stateUpdated", eventState);
+  // 接続した時点では一般画面向けの状態を送る
+  // （管理画面は直後に registerAsAdmin を送って管理者用状態を受け取る）
+  socket.emit("stateUpdated", getPublicState());
+
+  // 管理画面として登録する（座席番号や参加コードを見られるようにする）
+  socket.on("registerAsAdmin", () => {
+    socket.join("admins");
+    socket.emit("stateUpdated", getAdminState());
+  });
+
+  // 参加コードを設定する（管理画面から）
+  socket.on("setJoinCode", (code) => {
+    const trimmedCode = String(code || "").trim();
+
+    if (!trimmedCode) {
+      socket.emit("joinCodeResult", {
+        success: false,
+        message: "参加コードを入力してください"
+      });
+      return;
+    }
+
+    joinCode = trimmedCode;
+    socket.emit("joinCodeResult", {
+      success: true,
+      message: `参加コードを「${joinCode}」に設定しました`,
+      joinCode
+    });
+
+    // 管理画面同士で最新のコードを共有する
+    io.to("admins").emit("stateUpdated", getAdminState());
+  });
 
   // チーム参加
-  socket.on("joinTeam", (teamName) => {
-    const trimmedName = String(teamName || "").trim();
+  // 引数: { teamName, seatNumber, joinCode }
+  socket.on("joinTeam", (payload) => {
+    // 昔の呼び方（文字列だけ）にも対応しつつ、オブジェクト形式を正とする
+    const data = typeof payload === "string" ? { teamName: payload } : payload || {};
+    const trimmedName = String(data.teamName || "").trim();
+    const trimmedSeat = String(data.seatNumber || "").trim();
+    const enteredCode = String(data.joinCode || "").trim();
+
+    if (!joinCode) {
+      socket.emit("joinResult", {
+        success: false,
+        message: "参加コードがまだ設定されていません。管理者に連絡してください"
+      });
+      return;
+    }
+
+    if (!enteredCode) {
+      socket.emit("joinResult", {
+        success: false,
+        message: "参加コードを入力してください"
+      });
+      return;
+    }
+
+    if (enteredCode !== joinCode) {
+      socket.emit("joinResult", {
+        success: false,
+        message: "参加コードが正しくありません"
+      });
+      return;
+    }
 
     if (!trimmedName) {
       socket.emit("joinResult", {
         success: false,
         message: "チーム名を入力してください"
+      });
+      return;
+    }
+
+    if (!trimmedSeat) {
+      socket.emit("joinResult", {
+        success: false,
+        message: "座席番号を入力してください"
       });
       return;
     }
@@ -177,19 +275,113 @@ io.on("connection", (socket) => {
       return;
     }
 
+    // 座席番号の重複も防ぐ
+    const seatExists = eventState.teams.some((team) => team.seatNumber === trimmedSeat);
+    if (seatExists) {
+      socket.emit("joinResult", {
+        success: false,
+        message: "その座席番号はすでに使われています"
+      });
+      return;
+    }
+
     const team = {
       id: socket.id,
       name: trimmedName,
+      seatNumber: trimmedSeat, // 管理者だけが画面で確認する
       score: 100
     };
 
     eventState.teams.push(team);
     eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
 
+    // 参加者本人への結果には座席番号を含めない（管理者専用情報のため）
     socket.emit("joinResult", {
       success: true,
       message: `チーム「${trimmedName}」で参加しました`,
-      team
+      team: toPublicTeam(team)
+    });
+
+    broadcastState();
+  });
+
+  // 参加後のチーム名・座席番号の更新（参加受付中のみ許可）
+  socket.on("updateTeamInfo", (payload) => {
+    // イベント開始後は変更できない
+    if (eventState.status !== "waiting") {
+      socket.emit("updateTeamResult", {
+        success: false,
+        message: "イベント開始後はチーム情報を変更できません"
+      });
+      return;
+    }
+
+    const data = payload || {};
+    const trimmedName = String(data.teamName || "").trim();
+    const trimmedSeat = String(data.seatNumber || "").trim();
+
+    const team = eventState.teams.find((t) => t.id === socket.id);
+    if (!team) {
+      socket.emit("updateTeamResult", {
+        success: false,
+        message: "先にチーム参加してください"
+      });
+      return;
+    }
+
+    if (!trimmedName) {
+      socket.emit("updateTeamResult", {
+        success: false,
+        message: "チーム名を入力してください"
+      });
+      return;
+    }
+
+    if (!trimmedSeat) {
+      socket.emit("updateTeamResult", {
+        success: false,
+        message: "座席番号を入力してください"
+      });
+      return;
+    }
+
+    // 自分以外で同じチーム名が使われていないか確認
+    const nameTaken = eventState.teams.some(
+      (t) => t.id !== socket.id && t.name === trimmedName
+    );
+    if (nameTaken) {
+      socket.emit("updateTeamResult", {
+        success: false,
+        message: "そのチーム名はすでに使われています"
+      });
+      return;
+    }
+
+    // 自分以外で同じ座席番号が使われていないか確認
+    const seatTaken = eventState.teams.some(
+      (t) => t.id !== socket.id && t.seatNumber === trimmedSeat
+    );
+    if (seatTaken) {
+      socket.emit("updateTeamResult", {
+        success: false,
+        message: "その座席番号はすでに使われています"
+      });
+      return;
+    }
+
+    team.name = trimmedName;
+    team.seatNumber = trimmedSeat;
+    eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
+
+    // 回答公開中なら、表示用のチーム名も最新に合わせる
+    if (eventState.revealedAnswers.length > 0) {
+      eventState.revealedAnswers = buildRevealedAnswers();
+    }
+
+    socket.emit("updateTeamResult", {
+      success: true,
+      message: `チーム情報を更新しました（${trimmedName} / 座席 ${trimmedSeat}）`,
+      team: toPublicTeam(team)
     });
 
     broadcastState();
@@ -346,6 +538,16 @@ io.on("connection", (socket) => {
 
     eventState.status = "survey_results";
     eventState.revealedAnswers = buildRevealedAnswers();
+    broadcastState();
+  });
+
+  // 順位発表（アンケート結果公開の次の画面へ遷移）
+  socket.on("showRanking", () => {
+    if (eventState.status !== "survey_results") {
+      return;
+    }
+
+    eventState.status = "ranking_revealed";
     broadcastState();
   });
 
