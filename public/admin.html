@@ -65,8 +65,11 @@
             <!-- 参加受付を再開する -->
             <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
 
-            <!-- イベント全体を終了する -->
+            <!-- イベント全体を終了する（結果を残す） -->
             <button id="finishEventButton" style="display: none;">イベント終了</button>
+
+            <!-- 終了後にチーム・結果を消して最初からやり直す -->
+            <button id="resetEventButton" style="display: none;">新規イベント（リセット）</button>
 
           </div>
         </div>
@@ -74,6 +77,9 @@
         <!-- 現在の問題に関する情報 -->
         <div class="card admin-question-info">
           <h2>現在の問題</h2>
+
+          <!-- 何問目か（例: 2 / 5） -->
+          <p id="questionProgressText">進捗: --</p>
 
           <!-- 現在の問題文 -->
           <p id="currentQuestionText">まだ問題は表示されていません</p>
@@ -88,10 +94,17 @@
           <p id="correctAnswerText">正解: --</p>
         </div>
 
+        <!-- 問題一覧（管理用） -->
+        <div class="card">
+          <h2>問題一覧</h2>
+          <ul id="questionList"></ul>
+        </div>
+
         <!-- 参加コードの設定（参加者が入力する合言葉） -->
         <div class="card">
           <h2>参加コード設定</h2>
           <p class="admin-hint">参加者はこのコードを入力しないと参加できません。</p>
+          <p class="admin-hint">新規参加は「参加受付中」のみ可能です。イベント開始後は再接続のみ受け付けます。</p>
 
           <!-- 未設定のとき／「コードを変更」押下後だけ表示する編集エリア -->
           <div id="joinCodeEditArea">
@@ -128,6 +141,12 @@
           <ul id="teamList"></ul>
         </div>
 
+        <!-- 回答状況（誰が答えたか・未回答か） -->
+        <div class="card">
+          <h2>回答状況</h2>
+          <ul id="answerStatusList"></ul>
+        </div>
+
         <!-- 回答公開後に表示する一覧 -->
         <div class="card">
           <h2>回答一覧</h2>
@@ -149,6 +168,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=5"></script>
+  <script src="/js/admin.js?v=6"></script>
 </body>
 </html>

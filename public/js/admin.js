@@ -15,15 +15,19 @@ const showSurveyResultsButton = document.getElementById("showSurveyResultsButton
 const showRankingButton = document.getElementById("showRankingButton");
 const reopenJoinPhaseButton = document.getElementById("reopenJoinPhaseButton");
 const finishEventButton = document.getElementById("finishEventButton");
+const resetEventButton = document.getElementById("resetEventButton");
 const extendTimeInput = document.getElementById("extendTimeInput");
 const extendTimeButton = document.getElementById("extendTimeButton");
 const currentQuestionText = document.getElementById("currentQuestionText");
+const questionProgressText = document.getElementById("questionProgressText");
 const answeredCountText = document.getElementById("answeredCountText");
 const timerText = document.getElementById("timerText");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const answerList = document.getElementById("answerList");
 const rankingList = document.getElementById("rankingList");
 const teamList = document.getElementById("teamList");
+const answerStatusList = document.getElementById("answerStatusList");
+const questionList = document.getElementById("questionList");
 
 // 参加コード設定用の要素
 const joinCodeInput = document.getElementById("joinCodeInput");
@@ -36,22 +40,16 @@ const joinCodeEditArea = document.getElementById("joinCodeEditArea");
 const joinCodeLockedArea = document.getElementById("joinCodeLockedArea");
 
 // true のときだけ入力欄を表示して編集できる
-// （設定済みのあとに「コードを変更」を押すと true になる）
 let isEditingJoinCode = false;
 
 // 最後にサーバーから受け取った参加コード（キャンセル時に戻す用）
 let lastKnownJoinCode = "";
 
-// 接続成功時
 socket.on("connect", () => {
   statusEl.textContent = "管理画面が接続されました";
-  // 再接続時も管理者として登録し直す
   socket.emit("registerAsAdmin");
 });
 
-// 参加コード欄の表示切替
-// - 未設定／編集中 → 入力欄を表示
-// - 設定済みかつ編集中でない → 「設定済み」表示＋変更ボタン
 function updateJoinCodeUI(joinCode) {
   const hasCode = Boolean(joinCode);
   lastKnownJoinCode = joinCode || "";
@@ -60,7 +58,6 @@ function updateJoinCodeUI(joinCode) {
     ? `現在の参加コード: ${joinCode}`
     : "現在の参加コード: （未設定）";
 
-  // 設定済みで、かつ変更モードでないときはロック表示
   if (hasCode && !isEditingJoinCode) {
     joinCodeEditArea.style.display = "none";
     joinCodeLockedArea.style.display = "block";
@@ -68,14 +65,10 @@ function updateJoinCodeUI(joinCode) {
     return;
   }
 
-  // 未設定、または変更ボタンを押した直後は編集可能
   joinCodeEditArea.style.display = "block";
   joinCodeLockedArea.style.display = "none";
-
-  // キャンセルは「変更モード中」だけ表示（初回設定時は不要）
   cancelJoinCodeButton.style.display = isEditingJoinCode ? "inline-block" : "none";
 
-  // 変更モードのときは現在のコードを入力欄に入れておく
   if (hasCode && isEditingJoinCode && !joinCodeInput.value) {
     joinCodeInput.value = joinCode;
   }
@@ -83,24 +76,26 @@ function updateJoinCodeUI(joinCode) {
 
 function updateActionButtons(state) {
   const showStart = state.status === "waiting";
-  // 次の問題へ：開始後・正解発表後・アンケート結果公開後・順位発表後
-  const showNextQuestion =
-    state.status === "started" ||
-    state.status === "correct_revealed" ||
-    state.status === "survey_results" ||
-    state.status === "ranking_revealed";
+  // 次の問題へ：次の問題が残っているときだけ
+  const canShowNext =
+    state.hasMoreQuestions &&
+    (state.status === "started" ||
+      state.status === "correct_revealed" ||
+      state.status === "survey_results" ||
+      state.status === "ranking_revealed");
   const showCloseAnswers = state.status === "question";
   const showRevealAnswers = state.status === "answer_closed";
   const showRevealCorrectAnswer = state.status === "answers_revealed";
   const showSurveyResults = state.status === "correct_revealed";
-  // 順位発表：アンケート結果公開中のみ表示
   const showRanking = state.status === "survey_results";
   const showExtendTime = state.status === "question";
   const showReopenJoin = state.status === "started" && !state.hasQuestionStarted;
+  // 終了：進行中のみ（終了画面そのものは別ボタン）
   const showFinish = state.status !== "waiting" && state.status !== "finished";
+  const showReset = state.status === "finished";
 
   startEventButton.style.display = showStart ? "inline-block" : "none";
-  nextQuestionButton.style.display = showNextQuestion ? "inline-block" : "none";
+  nextQuestionButton.style.display = canShowNext ? "inline-block" : "none";
   closeAnswersButton.style.display = showCloseAnswers ? "inline-block" : "none";
   revealAnswersButton.style.display = showRevealAnswers ? "inline-block" : "none";
   revealCorrectAnswerButton.style.display = showRevealCorrectAnswer ? "inline-block" : "none";
@@ -110,12 +105,12 @@ function updateActionButtons(state) {
   extendTimeButton.style.display = showExtendTime ? "inline-block" : "none";
   reopenJoinPhaseButton.style.display = showReopenJoin ? "inline-block" : "none";
   finishEventButton.style.display = showFinish ? "inline-block" : "none";
+  resetEventButton.style.display = showReset ? "inline-block" : "none";
 }
 
-// 状態更新を受けたら画面を書き換える
 socket.on("stateUpdated", (state) => {
   if (state.status === "waiting") statusEl.textContent = "参加受付中";
-  if (state.status === "started") statusEl.textContent = "開始済み";
+  if (state.status === "started") statusEl.textContent = "開始済み（新規参加締切）";
   if (state.status === "question") statusEl.textContent = "回答受付中";
   if (state.status === "answer_closed") statusEl.textContent = "回答受付終了";
   if (state.status === "answers_revealed") statusEl.textContent = "回答公開中";
@@ -126,11 +121,16 @@ socket.on("stateUpdated", (state) => {
 
   updateActionButtons(state);
 
+  const total = state.questionCount || 0;
+  const current = state.currentQuestionNumber || 0;
+  questionProgressText.textContent =
+    current > 0 ? `進捗: ${current} / ${total} 問目` : `進捗: 未出題（全${total}問）`;
+
   currentQuestionText.textContent = state.currentQuestion
     ? state.currentQuestion.questionText
     : "まだ問題は表示されていません";
 
-  answeredCountText.textContent = `回答済み: ${state.answeredCount}件`;
+  answeredCountText.textContent = `回答済み: ${state.answeredCount} / ${state.teams.length}件`;
 
   timerText.textContent =
     typeof state.remainingTime === "number"
@@ -140,19 +140,51 @@ socket.on("stateUpdated", (state) => {
   correctAnswerText.textContent =
     state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";
 
-  // 参加コード欄の表示を更新（管理者のみ受信）
   updateJoinCodeUI(state.joinCode);
 
-  // 参加チーム一覧（座席番号つき・管理者のみ）
+  // 問題一覧
+  questionList.innerHTML = "";
+  (state.questionList || []).forEach((item, index) => {
+    const li = document.createElement("li");
+    const num = index + 1;
+    li.textContent = `${num}. ${item.questionText}`;
+    if (item.isCurrent) {
+      li.className = "question-item-current";
+    }
+    questionList.appendChild(li);
+  });
+
+  // 参加チーム一覧
   teamList.innerHTML = "";
   state.teams.forEach((team) => {
     const li = document.createElement("li");
-    // 座席番号は管理者画面だけに表示する
-    li.textContent = `${team.name}（座席: ${team.seatNumber || "--"}） - ${team.score}点`;
+    const onlineLabel = team.online === false ? "・オフライン" : "";
+    li.textContent = `${team.name}（座席: ${team.seatNumber || "--"}） - ${team.score}点${onlineLabel}`;
+    if (team.online === false) {
+      li.className = "team-offline";
+    }
     teamList.appendChild(li);
   });
 
-  // 回答一覧を描画
+  // 回答状況（座席つき・管理者のみ）
+  answerStatusList.innerHTML = "";
+  const statusRows = state.answerStatus || [];
+  if (statusRows.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "参加チームがありません";
+    answerStatusList.appendChild(li);
+  } else {
+    statusRows.forEach((row) => {
+      const li = document.createElement("li");
+      const answeredLabel = row.answered ? "回答済" : "未回答";
+      const onlineLabel = row.online === false ? " / オフライン" : "";
+      li.textContent = `${row.name}（座席: ${row.seatNumber || "--"}）: ${answeredLabel}${onlineLabel}`;
+      li.className = row.answered ? "answer-status-done" : "answer-status-pending";
+      answerStatusList.appendChild(li);
+    });
+  }
+
+  // 回答一覧（公開後）
   answerList.innerHTML = "";
   state.revealedAnswers.forEach((item) => {
     const li = document.createElement("li");
@@ -163,7 +195,7 @@ socket.on("stateUpdated", (state) => {
     answerList.appendChild(li);
   });
 
-  // 順位表を描画
+  // 順位表
   rankingList.innerHTML = "";
   state.ranking.forEach((team, index) => {
     const li = document.createElement("li");
@@ -172,11 +204,8 @@ socket.on("stateUpdated", (state) => {
   });
 });
 
-// 参加コード設定結果
 socket.on("joinCodeResult", (result) => {
   joinCodeMessage.textContent = result.message;
-
-  // 設定に成功したら編集モードを終了して「設定済み」表示にする
   if (result.success) {
     isEditingJoinCode = false;
     joinCodeInput.value = "";
@@ -184,22 +213,24 @@ socket.on("joinCodeResult", (result) => {
   }
 });
 
-// 参加コードを設定する
+socket.on("startEventResult", (result) => {
+  if (!result.success) {
+    statusEl.textContent = result.message;
+  }
+});
+
 setJoinCodeButton.addEventListener("click", () => {
   socket.emit("setJoinCode", joinCodeInput.value.trim());
 });
 
-// 「コードを変更」→ 入力欄を再表示して編集可能にする
 changeJoinCodeButton.addEventListener("click", () => {
   isEditingJoinCode = true;
   joinCodeMessage.textContent = "";
-  // 現在のコードを入力欄に入れて、書き換えやすくする
   joinCodeInput.value = lastKnownJoinCode;
   updateJoinCodeUI(lastKnownJoinCode);
   joinCodeInput.focus();
 });
 
-// 「キャンセル」→ 変更せずに設定済み表示へ戻す
 cancelJoinCodeButton.addEventListener("click", () => {
   isEditingJoinCode = false;
   joinCodeInput.value = "";
@@ -207,7 +238,6 @@ cancelJoinCodeButton.addEventListener("click", () => {
   updateJoinCodeUI(lastKnownJoinCode);
 });
 
-// ボタン操作をサーバーへ送信
 startEventButton.addEventListener("click", () => {
   socket.emit("startEvent");
 });
@@ -250,4 +280,8 @@ reopenJoinPhaseButton.addEventListener("click", () => {
 
 finishEventButton.addEventListener("click", () => {
   socket.emit("finishEvent");
+});
+
+resetEventButton.addEventListener("click", () => {
+  socket.emit("resetEvent");
 });

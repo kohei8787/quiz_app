@@ -2,11 +2,13 @@
   {
     "id": 1,
     "questionText": "社内アンケートで『朝食を毎日食べる』と答えた人の割合は？",
-    "correctAnswer": 68
+    "correctAnswer": 68,
+    "surveyImage": "/data/survey/1.svg"
   },
   {
     "id": 2,
     "questionText": "社内アンケートで『リモートワークを週3日以上希望する』と答えた人の割合は？",
-    "correctAnswer": 54
+    "correctAnswer": 54,
+    "surveyImage": "/data/survey/2.svg"
   }
 ]

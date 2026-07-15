@@ -16,7 +16,7 @@ const io = new Server(server);
 // publicフォルダの中身をそのまま配信する（例: /admin.html）
 app.use(express.static(path.join(__dirname, "public")));
 
-// dataフォルダを /data 配下で配信する（例: /data/image/graph-placeholder.svg）
+// dataフォルダを /data 配下で配信する（例: /data/survey/1.svg）
 app.use("/data", express.static(path.join(__dirname, "data")));
 
 // 問題データをJSONファイルから読み込む
@@ -33,17 +33,20 @@ let joinCode = "";
 // イベント全体の状態をまとめて管理する
 const eventState = {
   status: "waiting", // waiting / started / question / answer_closed / answers_revealed / correct_revealed / survey_results / ranking_revealed / finished
-  teams: [], // 参加チーム一覧（各チーム: id, name, seatNumber, score）
+  teams: [], // 参加チーム一覧（各チーム: id, name, seatNumber, score, online）
   hasQuestionStarted: false, // 1度でも問題を出したか
   currentQuestionIndex: -1, // 現在の問題番号（配列index）
   currentQuestion: null, // 画面表示用の現在問題
   currentQuestionId: null, // 問題切り替え判定用ID
+  surveyImageUrl: null, // アンケート結果画像のURL（問題ごと）
   answers: {}, // { socket.id: answer }
   answeredCount: 0, // 回答済み件数
   remainingTime: null, // タイマー残り秒数
   revealedAnswers: [], // 公開用の回答一覧
   correctAnswer: null, // 公開された正解
-  ranking: [] // 現在の順位表
+  ranking: [], // 現在の順位表
+  questionCount: questions.length, // 全問題数
+  hasMoreQuestions: false // まだ次の問題があるか
 };
 
 // 座席番号を除いたチーム情報を作る（参加者・スクリーン向け）
@@ -51,12 +54,42 @@ function toPublicTeam(team) {
   return {
     id: team.id,
     name: team.name,
-    score: team.score
+    score: team.score,
+    online: team.online !== false
   };
+}
+
+// 進捗・次問有無などを状態へ反映する
+function refreshDerivedFields() {
+  eventState.questionCount = questions.length;
+  eventState.hasMoreQuestions =
+    eventState.currentQuestionIndex + 1 < questions.length;
+  eventState.answeredCount = Object.keys(eventState.answers).length;
+}
+
+// 管理者向けの回答状況一覧（座席番号つき）
+function buildAnswerStatus() {
+  return eventState.teams.map((team) => ({
+    name: team.name,
+    seatNumber: team.seatNumber,
+    answered: eventState.answers[team.id] !== undefined,
+    online: team.online !== false
+  }));
+}
+
+// 管理者向けの問題一覧
+function buildQuestionList() {
+  return questions.map((question, index) => ({
+    index,
+    id: question.id,
+    questionText: question.questionText,
+    isCurrent: index === eventState.currentQuestionIndex
+  }));
 }
 
 // 一般画面向けの状態（座席番号・参加コードは含めない）
 function getPublicState() {
+  refreshDerivedFields();
   return {
     ...eventState,
     teams: eventState.teams.map(toPublicTeam),
@@ -64,16 +97,25 @@ function getPublicState() {
   };
 }
 
-// 管理画面向けの状態（座席番号・現在の参加コードを含める）
+// 管理画面向けの状態（座席番号・参加コード・回答状況・問題一覧を含める）
 function getAdminState() {
+  refreshDerivedFields();
   return {
     ...eventState,
-    joinCode
+    joinCode,
+    teams: eventState.teams,
+    ranking: eventState.ranking,
+    answerStatus: buildAnswerStatus(),
+    questionList: buildQuestionList(),
+    // 表示用: 現在何問目か（未出題なら 0）
+    currentQuestionNumber:
+      eventState.currentQuestionIndex >= 0
+        ? eventState.currentQuestionIndex + 1
+        : 0
   };
 }
 
 // 全クライアントへ最新状態を送る
-// 管理者には座席番号付き、それ以外には座席番号なしで送る
 function broadcastState() {
   io.except("admins").emit("stateUpdated", getPublicState());
   io.to("admins").emit("stateUpdated", getAdminState());
@@ -87,23 +129,36 @@ function stopTimer() {
   }
 }
 
-// イベント状態を初期状態へ戻す
+// 回答受付を終了する（手動・時間切れ・全員回答で共用）
+function closeAnswerPhase() {
+  if (eventState.status !== "question") {
+    return;
+  }
+  eventState.status = "answer_closed";
+  eventState.remainingTime = 0;
+  stopTimer();
+}
+
+// イベント状態を初期状態へ戻す（チームもクリア）
 function resetEventState() {
   stopTimer();
   eventState.status = "waiting";
+  eventState.teams = [];
   eventState.hasQuestionStarted = false;
   eventState.currentQuestionIndex = -1;
   eventState.currentQuestion = null;
   eventState.currentQuestionId = null;
+  eventState.surveyImageUrl = null;
   eventState.answers = {};
   eventState.answeredCount = 0;
   eventState.remainingTime = null;
   eventState.revealedAnswers = [];
   eventState.correctAnswer = null;
   eventState.ranking = [];
+  eventState.hasMoreQuestions = false;
 }
 
-// 参加受付状態へ戻す
+// 参加受付状態へ戻す（チームは残す）
 function reopenJoinPhase() {
   stopTimer();
   eventState.status = "waiting";
@@ -111,11 +166,23 @@ function reopenJoinPhase() {
   eventState.currentQuestionIndex = -1;
   eventState.currentQuestion = null;
   eventState.currentQuestionId = null;
+  eventState.surveyImageUrl = null;
   eventState.answers = {};
   eventState.answeredCount = 0;
   eventState.remainingTime = null;
   eventState.revealedAnswers = [];
   eventState.correctAnswer = null;
+  eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
+  eventState.hasMoreQuestions = false;
+}
+
+// 最終結果を残して終了状態にする
+function finishEventKeepResults() {
+  stopTimer();
+  eventState.status = "finished";
+  eventState.remainingTime = null;
+  eventState.surveyImageUrl = null;
+  // 最終順位を確定表示用に残す
   eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
 }
 
@@ -135,9 +202,7 @@ function startTimer(seconds) {
 
     // 0秒になったら回答受付終了
     if (eventState.remainingTime <= 0) {
-      eventState.remainingTime = 0;
-      eventState.status = "answer_closed";
-      stopTimer();
+      closeAnswerPhase();
     }
 
     broadcastState();
@@ -182,13 +247,41 @@ function updateScores() {
   eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
 }
 
+// 再接続時に古い socket.id の回答を新しい id へ移す
+function migrateAnswers(oldSocketId, newSocketId) {
+  if (oldSocketId === newSocketId) {
+    return;
+  }
+  if (eventState.answers[oldSocketId] !== undefined) {
+    eventState.answers[newSocketId] = eventState.answers[oldSocketId];
+    delete eventState.answers[oldSocketId];
+  }
+}
+
+// 既存チームへの再接続（チーム名・座席番号・参加コードが一致）
+function reclaimTeam(socket, team) {
+  const oldId = team.id;
+  migrateAnswers(oldId, socket.id);
+  team.id = socket.id;
+  team.online = true;
+  eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
+
+  socket.emit("joinResult", {
+    success: true,
+    message: `チーム「${team.name}」に再接続しました`,
+    team: toPublicTeam(team),
+    reconnected: true
+  });
+
+  broadcastState();
+}
+
 // ブラウザ接続時の処理
 io.on("connection", (socket) => {
   // 接続した時点では一般画面向けの状態を送る
-  // （管理画面は直後に registerAsAdmin を送って管理者用状態を受け取る）
   socket.emit("stateUpdated", getPublicState());
 
-  // 管理画面として登録する（座席番号や参加コードを見られるようにする）
+  // 管理画面として登録する
   socket.on("registerAsAdmin", () => {
     socket.join("admins");
     socket.emit("stateUpdated", getAdminState());
@@ -213,14 +306,12 @@ io.on("connection", (socket) => {
       joinCode
     });
 
-    // 管理画面同士で最新のコードを共有する
     io.to("admins").emit("stateUpdated", getAdminState());
   });
 
-  // チーム参加
+  // チーム参加 / 再接続
   // 引数: { teamName, seatNumber, joinCode }
   socket.on("joinTeam", (payload) => {
-    // 昔の呼び方（文字列だけ）にも対応しつつ、オブジェクト形式を正とする
     const data = typeof payload === "string" ? { teamName: payload } : payload || {};
     const trimmedName = String(data.teamName || "").trim();
     const trimmedSeat = String(data.seatNumber || "").trim();
@@ -266,18 +357,26 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const exists = eventState.teams.some((team) => team.name === trimmedName);
-    if (exists) {
-      socket.emit("joinResult", {
-        success: false,
-        message: "そのチーム名はすでに使われています"
-      });
+    // 同じチーム名・座席番号の既存チームがいれば再接続として扱う
+    const existingByName = eventState.teams.find((team) => team.name === trimmedName);
+    const existingBySeat = eventState.teams.find(
+      (team) => team.seatNumber === trimmedSeat
+    );
+
+    if (existingByName) {
+      if (existingByName.seatNumber !== trimmedSeat) {
+        socket.emit("joinResult", {
+          success: false,
+          message: "そのチーム名はすでに使われています"
+        });
+        return;
+      }
+      // チーム名・座席が一致 → 再接続（イベント開始後でも可）
+      reclaimTeam(socket, existingByName);
       return;
     }
 
-    // 座席番号の重複も防ぐ
-    const seatExists = eventState.teams.some((team) => team.seatNumber === trimmedSeat);
-    if (seatExists) {
+    if (existingBySeat) {
       socket.emit("joinResult", {
         success: false,
         message: "その座席番号はすでに使われています"
@@ -285,29 +384,38 @@ io.on("connection", (socket) => {
       return;
     }
 
+    // 新規参加は参加受付中（waiting）のみ
+    if (eventState.status !== "waiting") {
+      socket.emit("joinResult", {
+        success: false,
+        message: "参加受付は終了しています。再接続する場合は参加時と同じチーム名・座席番号を入力してください"
+      });
+      return;
+    }
+
     const team = {
       id: socket.id,
       name: trimmedName,
-      seatNumber: trimmedSeat, // 管理者だけが画面で確認する
-      score: 100
+      seatNumber: trimmedSeat,
+      score: 100,
+      online: true
     };
 
     eventState.teams.push(team);
     eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
 
-    // 参加者本人への結果には座席番号を含めない（管理者専用情報のため）
     socket.emit("joinResult", {
       success: true,
       message: `チーム「${trimmedName}」で参加しました`,
-      team: toPublicTeam(team)
+      team: toPublicTeam(team),
+      reconnected: false
     });
 
     broadcastState();
   });
 
-  // 参加後のチーム名・座席番号の更新（参加受付中のみ許可）
+  // 参加後のチーム名・座席番号の更新（参加受付中のみ）
   socket.on("updateTeamInfo", (payload) => {
-    // イベント開始後は変更できない
     if (eventState.status !== "waiting") {
       socket.emit("updateTeamResult", {
         success: false,
@@ -345,7 +453,6 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // 自分以外で同じチーム名が使われていないか確認
     const nameTaken = eventState.teams.some(
       (t) => t.id !== socket.id && t.name === trimmedName
     );
@@ -357,7 +464,6 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // 自分以外で同じ座席番号が使われていないか確認
     const seatTaken = eventState.teams.some(
       (t) => t.id !== socket.id && t.seatNumber === trimmedSeat
     );
@@ -373,7 +479,6 @@ io.on("connection", (socket) => {
     team.seatNumber = trimmedSeat;
     eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
 
-    // 回答公開中なら、表示用のチーム名も最新に合わせる
     if (eventState.revealedAnswers.length > 0) {
       eventState.revealedAnswers = buildRevealedAnswers();
     }
@@ -387,14 +492,14 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // イベント開始
+  // イベント開始（この時点で新規参加は締め切る）
   socket.on("startEvent", () => {
     if (eventState.status !== "waiting") {
       return;
     }
 
     if (eventState.teams.length < 1) {
-      socket.emit("joinResult", {
+      socket.emit("startEventResult", {
         success: false,
         message: "参加チームが1つ以上必要です"
       });
@@ -419,15 +524,18 @@ io.on("connection", (socket) => {
     eventState.currentQuestionIndex = nextIndex;
     eventState.currentQuestion = {
       id: question.id,
-      questionText: question.questionText
+      questionText: question.questionText,
+      surveyImage: question.surveyImage || null
     };
     eventState.currentQuestionId = question.id;
+    eventState.surveyImageUrl = null;
     eventState.status = "question";
     eventState.hasQuestionStarted = true;
     eventState.answers = {};
     eventState.answeredCount = 0;
     eventState.revealedAnswers = [];
     eventState.correctAnswer = null;
+    refreshDerivedFields();
 
     // いったん30秒固定
     startTimer(30);
@@ -478,15 +586,21 @@ io.on("connection", (socket) => {
       message: `回答 ${answer}% を受け付けました`
     });
 
+    // 全チームが回答したら自動で受付終了
+    if (
+      eventState.teams.length > 0 &&
+      eventState.answeredCount >= eventState.teams.length
+    ) {
+      closeAnswerPhase();
+    }
+
     broadcastState();
   });
 
   // 回答受付終了
   socket.on("closeAnswers", () => {
     if (eventState.status === "question") {
-      eventState.status = "answer_closed";
-      eventState.remainingTime = 0;
-      stopTimer();
+      closeAnswerPhase();
       broadcastState();
     }
   });
@@ -530,18 +644,23 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // アンケート結果公開
+  // アンケート結果公開（問題に紐づいた画像をセット）
   socket.on("showSurveyResults", () => {
     if (eventState.status !== "correct_revealed") {
       return;
     }
 
+    const question = questions[eventState.currentQuestionIndex];
+    eventState.surveyImageUrl =
+      (question && question.surveyImage) ||
+      (eventState.currentQuestion && eventState.currentQuestion.surveyImage) ||
+      null;
     eventState.status = "survey_results";
     eventState.revealedAnswers = buildRevealedAnswers();
     broadcastState();
   });
 
-  // 順位発表（アンケート結果公開の次の画面へ遷移）
+  // 順位発表
   socket.on("showRanking", () => {
     if (eventState.status !== "survey_results") {
       return;
@@ -551,7 +670,7 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // 参加受付へ戻す
+  // 参加受付へ戻す（まだ問題を出していない開始直後のみ）
   socket.on("reopenJoinPhase", () => {
     if (eventState.status === "waiting" || eventState.hasQuestionStarted) {
       return;
@@ -561,23 +680,29 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // イベント終了
+  // イベント終了（順位などの結果を残す）
   socket.on("finishEvent", () => {
+    if (eventState.status === "waiting" || eventState.status === "finished") {
+      return;
+    }
+    finishEventKeepResults();
+    broadcastState();
+  });
+
+  // 新規イベント用に完全リセット（終了後など）
+  socket.on("resetEvent", () => {
     resetEventState();
     broadcastState();
   });
 
-  // 切断時
+  // 切断時：チームは残し、オフライン印だけ付ける（再接続できるようにする）
   socket.on("disconnect", () => {
-    eventState.teams = eventState.teams.filter((team) => team.id !== socket.id);
-
-    if (eventState.answers[socket.id] !== undefined) {
-      delete eventState.answers[socket.id];
-      eventState.answeredCount = Object.keys(eventState.answers).length;
+    const team = eventState.teams.find((t) => t.id === socket.id);
+    if (team) {
+      team.online = false;
+      eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
+      broadcastState();
     }
-
-    eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
-    broadcastState();
   });
 });
 
