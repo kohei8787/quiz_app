@@ -10,6 +10,8 @@ const adminLoginMessage = document.getElementById("adminLoginMessage");
 
 const statusEl = document.getElementById("status");
 const startEventButton = document.getElementById("startEventButton");
+const startPracticeButton = document.getElementById("startPracticeButton");
+const endPracticeButton = document.getElementById("endPracticeButton");
 const nextQuestionButton = document.getElementById("nextQuestionButton");
 const closeAnswersButton = document.getElementById("closeAnswersButton");
 const revealAnswersButton = document.getElementById("revealAnswersButton");
@@ -174,24 +176,37 @@ function updateJoinCodeUI(joinCode) {
 }
 
 function updateActionButtons(state) {
+  const inPractice = Boolean(state.isPractice);
   const showStart = state.status === "waiting";
+  // 例題：開始済みでまだ本番問題前のとき
+  const showStartPractice =
+    state.status === "started" && !state.hasQuestionStarted;
+  // 例題中（回答受付中／受付終了後）は「例題を終了」を表示
+  const showEndPractice =
+    inPractice &&
+    (state.status === "question" || state.status === "answer_closed");
   const canShowNext =
+    !inPractice &&
     state.hasMoreQuestions &&
     (state.status === "started" ||
       state.status === "correct_revealed" ||
       state.status === "survey_results" ||
       state.status === "ranking_revealed");
   const showCloseAnswers = state.status === "question";
-  const showRevealAnswers = state.status === "answer_closed";
-  const showRevealCorrectAnswer = state.status === "answers_revealed";
-  const showSurveyResults = state.status === "correct_revealed";
-  const showRanking = state.status === "survey_results";
+  // 例題では回答公開・正解発表へ進まない
+  const showRevealAnswers = !inPractice && state.status === "answer_closed";
+  const showRevealCorrectAnswer = !inPractice && state.status === "answers_revealed";
+  const showSurveyResults = !inPractice && state.status === "correct_revealed";
+  const showRanking = !inPractice && state.status === "survey_results";
   const showExtendTime = state.status === "question";
-  const showReopenJoin = state.status === "started" && !state.hasQuestionStarted;
+  const showReopenJoin =
+    state.status === "started" && !state.hasQuestionStarted && !inPractice;
   const showFinish = state.status !== "waiting" && state.status !== "finished";
   const showReset = state.status === "finished";
 
   startEventButton.style.display = showStart ? "inline-block" : "none";
+  startPracticeButton.style.display = showStartPractice ? "inline-block" : "none";
+  endPracticeButton.style.display = showEndPractice ? "inline-block" : "none";
   nextQuestionButton.style.display = canShowNext ? "inline-block" : "none";
   closeAnswersButton.style.display = showCloseAnswers ? "inline-block" : "none";
   revealAnswersButton.style.display = showRevealAnswers ? "inline-block" : "none";
@@ -213,8 +228,14 @@ socket.on("stateUpdated", (state) => {
 
   if (state.status === "waiting") statusEl.textContent = "参加受付中";
   if (state.status === "started") statusEl.textContent = "開始済み（新規参加締切）";
-  if (state.status === "question") statusEl.textContent = "回答受付中";
-  if (state.status === "answer_closed") statusEl.textContent = "回答受付終了";
+  if (state.status === "question") {
+    statusEl.textContent = state.isPractice ? "例題：回答受付中" : "回答受付中";
+  }
+  if (state.status === "answer_closed") {
+    statusEl.textContent = state.isPractice
+      ? "例題：回答受付終了（例題を終了できます）"
+      : "回答受付終了";
+  }
   if (state.status === "answers_revealed") statusEl.textContent = "回答公開中";
   if (state.status === "correct_revealed") statusEl.textContent = "正解発表中";
   if (state.status === "survey_results") statusEl.textContent = "アンケート結果公開";
@@ -225,8 +246,12 @@ socket.on("stateUpdated", (state) => {
 
   const total = state.questionCount || 0;
   const current = state.currentQuestionNumber || 0;
-  questionProgressText.textContent =
-    current > 0 ? `進捗: ${current} / ${total} 問目` : `進捗: 未出題（全${total}問）`;
+  if (state.isPractice) {
+    questionProgressText.textContent = "進捗: 例題（採点なし）";
+  } else {
+    questionProgressText.textContent =
+      current > 0 ? `進捗: ${current} / ${total} 問目` : `進捗: 未出題（全${total}問）`;
+  }
 
   currentQuestionText.textContent = state.currentQuestion
     ? state.currentQuestion.questionText
@@ -334,6 +359,14 @@ cancelJoinCodeButton.addEventListener("click", () => {
 
 startEventButton.addEventListener("click", () => {
   socket.emit("startEvent");
+});
+
+startPracticeButton.addEventListener("click", () => {
+  socket.emit("startPractice");
+});
+
+endPracticeButton.addEventListener("click", () => {
+  socket.emit("endPractice");
 });
 
 nextQuestionButton.addEventListener("click", () => {

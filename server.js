@@ -20,9 +20,24 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/data", express.static(path.join(__dirname, "data")));
 
 // 問題データをJSONファイルから読み込む
-const questions = JSON.parse(
+const questionsData = JSON.parse(
   fs.readFileSync(path.join(__dirname, "data", "questions.json"), "utf-8")
 );
+// 新形式 { practice, questions } と旧形式（配列）の両方に対応
+const questions = Array.isArray(questionsData)
+  ? questionsData
+  : questionsData.questions || [];
+const practiceQuestion = Array.isArray(questionsData)
+  ? {
+      id: "practice",
+      questionText:
+        "【例題】操作確認です。0〜100の数字を選んで「決定」を押してください。正解発表はありません。"
+    }
+  : questionsData.practice || {
+      id: "practice",
+      questionText:
+        "【例題】操作確認です。0〜100の数字を選んで「決定」を押してください。正解発表はありません。"
+    };
 
 // 管理画面用パスワード（data/admin-config.json で変更できる）
 let adminPassword = "quiz-admin";
@@ -43,6 +58,9 @@ let timerInterval = null;
 // 1問あたりの制限時間（秒）…デフォルト3分
 const QUESTION_TIME_SECONDS = 180;
 
+// 例題の制限時間（秒）…操作確認用なので短め
+const PRACTICE_TIME_SECONDS = 60;
+
 // 制限時間切れ時、未回答者がいる場合に自動延長する秒数
 const AUTO_EXTEND_SECONDS = 30;
 
@@ -58,7 +76,8 @@ function isAdminSocket(socket) {
 const eventState = {
   status: "waiting", // waiting / started / question / answer_closed / answers_revealed / correct_revealed / survey_results / ranking_revealed / finished
   teams: [], // 参加チーム一覧（各チーム: id, name, seatNumber, score, online）
-  hasQuestionStarted: false, // 1度でも問題を出したか
+  hasQuestionStarted: false, // 1度でも本番問題を出したか
+  isPractice: false, // 例題中か（正解発表・得点計算はしない）
   currentQuestionIndex: -1, // 現在の問題番号（配列index）
   currentQuestion: null, // 画面表示用の現在問題
   currentQuestionId: null, // 問題切り替え判定用ID
@@ -169,6 +188,7 @@ function resetEventState() {
   eventState.status = "waiting";
   eventState.teams = [];
   eventState.hasQuestionStarted = false;
+  eventState.isPractice = false;
   eventState.currentQuestionIndex = -1;
   eventState.currentQuestion = null;
   eventState.currentQuestionId = null;
@@ -187,6 +207,7 @@ function reopenJoinPhase() {
   stopTimer();
   eventState.status = "waiting";
   eventState.hasQuestionStarted = false;
+  eventState.isPractice = false;
   eventState.currentQuestionIndex = -1;
   eventState.currentQuestion = null;
   eventState.currentQuestionId = null;
@@ -198,6 +219,22 @@ function reopenJoinPhase() {
   eventState.correctAnswer = null;
   eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
   eventState.hasMoreQuestions = false;
+}
+
+// 例題を終了して「開始済み」に戻す（本番問題はまだ出していない）
+function endPracticePhase() {
+  stopTimer();
+  eventState.isPractice = false;
+  eventState.status = "started";
+  eventState.currentQuestion = null;
+  eventState.currentQuestionId = null;
+  eventState.surveyImageUrl = null;
+  eventState.answers = {};
+  eventState.answeredCount = 0;
+  eventState.remainingTime = null;
+  eventState.revealedAnswers = [];
+  eventState.correctAnswer = null;
+  // hasQuestionStarted は false のまま（例題では本番開始扱いにしない）
 }
 
 // 最終結果を残して終了状態にする
@@ -567,9 +604,55 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // 次の問題へ
+  // 例題開始（回答操作の練習。正解発表・得点計算はしない）
+  socket.on("startPractice", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
+    // 開始後・まだ本番問題を出していないときだけ
+    if (eventState.status !== "started" || eventState.hasQuestionStarted) {
+      return;
+    }
+
+    stopTimer();
+    eventState.isPractice = true;
+    eventState.currentQuestionIndex = -1;
+    eventState.currentQuestion = {
+      id: practiceQuestion.id,
+      questionText: practiceQuestion.questionText,
+      surveyImage: null
+    };
+    eventState.currentQuestionId = practiceQuestion.id;
+    eventState.surveyImageUrl = null;
+    eventState.status = "question";
+    eventState.answers = {};
+    eventState.answeredCount = 0;
+    eventState.revealedAnswers = [];
+    eventState.correctAnswer = null;
+    refreshDerivedFields();
+
+    startTimer(PRACTICE_TIME_SECONDS);
+  });
+
+  // 例題終了（本番前の待機に戻る）
+  socket.on("endPractice", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
+    if (!eventState.isPractice) {
+      return;
+    }
+    endPracticePhase();
+    broadcastState();
+  });
+
+  // 次の問題へ（本番）
   socket.on("nextQuestion", () => {
     if (!isAdminSocket(socket)) {
+      return;
+    }
+    // 例題中は本番問題へ進めない
+    if (eventState.isPractice) {
       return;
     }
     stopTimer();
@@ -581,6 +664,7 @@ io.on("connection", (socket) => {
 
     const question = questions[nextIndex];
 
+    eventState.isPractice = false;
     eventState.currentQuestionIndex = nextIndex;
     eventState.currentQuestion = {
       id: question.id,
@@ -686,9 +770,12 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // 回答公開
+  // 回答公開（例題では使わない）
   socket.on("revealAnswers", () => {
     if (!isAdminSocket(socket)) {
+      return;
+    }
+    if (eventState.isPractice) {
       return;
     }
     if (eventState.status !== "answer_closed") {
@@ -700,9 +787,12 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // 正解発表
+  // 正解発表（例題では使わない）
   socket.on("revealCorrectAnswer", () => {
     if (!isAdminSocket(socket)) {
+      return;
+    }
+    if (eventState.isPractice) {
       return;
     }
     if (eventState.status !== "answers_revealed") {
@@ -719,6 +809,9 @@ io.on("connection", (socket) => {
   // アンケート結果公開（問題に紐づいた画像をセット）
   socket.on("showSurveyResults", () => {
     if (!isAdminSocket(socket)) {
+      return;
+    }
+    if (eventState.isPractice) {
       return;
     }
     if (eventState.status !== "correct_revealed") {

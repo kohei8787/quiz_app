@@ -78,7 +78,11 @@ socket.on("stateUpdated", (state) => {
     correctAnswerText.textContent = "正解: --";
     gaugeContainer.innerHTML = "";
   } else if (state.status === "question" || state.status === "answer_closed") {
-    statusEl.textContent = "問題表示";
+    statusEl.textContent = state.isPractice
+      ? state.status === "answer_closed"
+        ? "例題：回答受付終了"
+        : "例題：回答受付中"
+      : "問題表示";
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "回答公開";
   } else if (state.status === "correct_revealed") {
@@ -101,8 +105,15 @@ socket.on("stateUpdated", (state) => {
 
     timerText.textContent = formatRemainingTime(state.remainingTime);
 
-    correctAnswerText.textContent =
-      state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";
+    // 例題では正解を表示しない
+    if (state.isPractice) {
+      correctAnswerText.textContent = "例題（正解発表なし）";
+    } else {
+      correctAnswerText.textContent =
+        state.correctAnswer !== null
+          ? `正解: ${state.correctAnswer}%`
+          : "正解: --";
+    }
   }
 
   if (state.status === "answers_revealed") {
