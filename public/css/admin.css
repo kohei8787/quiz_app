@@ -199,3 +199,23 @@ body {
   border: 1px solid #cbd5e1;
   color: #334155;
 }
+
+/* 問題一覧の現在の問題 */
+.question-item-current {
+  background: #dbeafe !important;
+  border-left: 4px solid #2563eb;
+  font-weight: bold;
+}
+
+/* 回答状況 */
+.answer-status-done {
+  border-left: 4px solid #16a34a;
+}
+
+.answer-status-pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.team-offline {
+  color: #94a3b8;
+}

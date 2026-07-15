@@ -18,7 +18,7 @@
 
     <!-- 参加受付中に表示するエリア -->
     <div id="waitingSection" class="card">
-      <h2>参加受付中</h2>
+      <h2 id="waitingTitle">参加受付中</h2>
 
       <!-- 参加済みチーム一覧 -->
       <ul id="teamList"></ul>
@@ -42,16 +42,16 @@
       <div id="gaugeContainer" style="margin: 24px 0;"></div>
     </div>
 
-    <!-- アンケート結果公開用のエリア（管理画面から遷移） -->
+    <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
     <div id="surveyResultsView" class="card" style="display: none;">
       <h2>アンケート結果公開</h2>
       <p>グラフを表示します</p>
-      <img src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
+      <img id="surveyImage" src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
     </div>
 
-    <!-- 順位発表用のエリア（アンケート結果公開の次に表示） -->
+    <!-- 順位発表／イベント終了時の最終順位 -->
     <div id="rankingView" class="card" style="display: none;">
-      <h2>順位発表</h2>
+      <h2 id="rankingTitle">順位発表</h2>
       <ul id="rankingList"></ul>
     </div>
   </main>
@@ -60,6 +60,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=3"></script>
+  <script src="/js/screen.js?v=4"></script>
 </body>
 </html>

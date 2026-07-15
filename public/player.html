@@ -81,16 +81,16 @@
       <div id="myTeamResult" style="display: none; margin-top: 12px; text-align: left;"></div>
     </div>
 
-    <!-- アンケート結果公開用のエリア（管理画面から遷移） -->
+    <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
     <div id="surveyResultsView" class="card" style="display: none;">
       <h2>アンケート結果公開</h2>
       <p>グラフを表示します</p>
-      <img src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
+      <img id="surveyImage" src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
     </div>
 
-    <!-- 順位発表用のエリア（アンケート結果公開の次に表示） -->
+    <!-- 順位発表用のエリア（アンケート結果公開の次／イベント終了時） -->
     <div id="rankingView" class="card" style="display: none;">
-      <h2>順位発表</h2>
+      <h2 id="rankingTitle">順位発表</h2>
       <p id="myRankText">あなたの順位: --</p>
       <ul id="rankingList"></ul>
     </div>
@@ -99,6 +99,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=5"></script>
+  <script src="/js/player.js?v=6"></script>
 </body>
 </html>
