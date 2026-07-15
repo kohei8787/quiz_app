@@ -40,6 +40,12 @@ try {
 // タイマー停止用にsetIntervalのIDを保持する
 let timerInterval = null;
 
+// 1問あたりの制限時間（秒）…デフォルト3分
+const QUESTION_TIME_SECONDS = 180;
+
+// 制限時間切れ時、未回答者がいる場合に自動延長する秒数
+const AUTO_EXTEND_SECONDS = 30;
+
 // 参加時に必要なコード（管理者が設定する。一般参加者には放送しない）
 let joinCode = "";
 
@@ -218,9 +224,20 @@ function startTimer(seconds) {
 
     eventState.remainingTime -= 1;
 
-    // 0秒になったら回答受付終了
+    // 0秒になったとき
     if (eventState.remainingTime <= 0) {
-      closeAnswerPhase();
+      refreshDerivedFields();
+      const hasTeams = eventState.teams.length > 0;
+      const allAnswered =
+        hasTeams && eventState.answeredCount >= eventState.teams.length;
+
+      if (hasTeams && !allAnswered) {
+        // 未回答のチームがいる → 自動で延長する
+        eventState.remainingTime = AUTO_EXTEND_SECONDS;
+      } else {
+        // 全員回答済み、またはチームがいない → 受付終了
+        closeAnswerPhase();
+      }
     }
 
     broadcastState();
@@ -580,8 +597,8 @@ io.on("connection", (socket) => {
     eventState.correctAnswer = null;
     refreshDerivedFields();
 
-    // いったん30秒固定
-    startTimer(30);
+    // デフォルト制限時間（3分）
+    startTimer(QUESTION_TIME_SECONDS);
   });
 
   // 回答送信
