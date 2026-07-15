@@ -9,8 +9,19 @@
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
 <body>
-  <!-- admin-container: 管理画面用のレイアウト（admin.cssで定義） -->
-  <main class="admin-container">
+  <!-- ログイン前に表示するパスワード入力画面 -->
+  <div id="adminLoginOverlay" class="admin-login-overlay">
+    <div class="admin-login-card">
+      <h1>管理画面ログイン</h1>
+      <p class="admin-hint">管理者パスワードを入力してください。</p>
+      <input id="adminPasswordInput" type="password" placeholder="パスワード" autocomplete="current-password" />
+      <button id="adminLoginButton" type="button">ログイン</button>
+      <p id="adminLoginMessage"></p>
+    </div>
+  </div>
+
+  <!-- ログイン後に表示する本体（最初は非表示） -->
+  <main id="adminMain" class="admin-container" style="display: none;">
 
     <!-- 画面上部：タイトルと現在のイベント状態 -->
     <header class="admin-header">
@@ -168,6 +179,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=6"></script>
+  <script src="/js/admin.js?v=7"></script>
 </body>
 </html>
