@@ -42,6 +42,18 @@ const currentJoinCodeText = document.getElementById("currentJoinCodeText");
 const joinCodeEditArea = document.getElementById("joinCodeEditArea");
 const joinCodeLockedArea = document.getElementById("joinCodeLockedArea");
 
+// 残り時間を mm:ss 形式の文字列にする
+function formatRemainingTime(seconds) {
+  if (typeof seconds !== "number") {
+    return "残り時間: --:--";
+  }
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const mm = String(mins).padStart(2, "0");
+  const ss = String(secs).padStart(2, "0");
+  return `残り時間: ${mm}:${ss}`;
+}
+
 // true のときだけ入力欄を表示して編集できる
 let isEditingJoinCode = false;
 
@@ -222,10 +234,7 @@ socket.on("stateUpdated", (state) => {
 
   answeredCountText.textContent = `回答済み: ${state.answeredCount} / ${state.teams.length}件`;
 
-  timerText.textContent =
-    typeof state.remainingTime === "number"
-      ? `残り時間: ${state.remainingTime}秒`
-      : "残り時間: --秒";
+  timerText.textContent = formatRemainingTime(state.remainingTime);
 
   correctAnswerText.textContent =
     state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";

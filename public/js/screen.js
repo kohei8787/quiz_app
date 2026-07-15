@@ -21,6 +21,18 @@ const finishedRankingList = document.getElementById("finishedRankingList");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
 
+// 残り時間を mm:ss 形式の文字列にする
+function formatRemainingTime(seconds) {
+  if (typeof seconds !== "number") {
+    return "残り時間: --:--";
+  }
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const mm = String(mins).padStart(2, "0");
+  const ss = String(secs).padStart(2, "0");
+  return `残り時間: ${mm}:${ss}`;
+}
+
 socket.on("connect", () => {
   statusEl.textContent = "スクリーン画面が接続されました";
 });
@@ -62,7 +74,7 @@ socket.on("stateUpdated", (state) => {
     statusEl.textContent = "参加受付中";
     waitingTitle.textContent = "参加受付中";
     currentQuestionText.textContent = "出題を待っています";
-    timerText.textContent = "残り時間: --秒";
+    timerText.textContent = "残り時間: --:--";
     correctAnswerText.textContent = "正解: --";
     gaugeContainer.innerHTML = "";
   } else if (state.status === "question" || state.status === "answer_closed") {
@@ -87,10 +99,7 @@ socket.on("stateUpdated", (state) => {
       ? state.currentQuestion.questionText
       : "出題を待っています";
 
-    timerText.textContent =
-      typeof state.remainingTime === "number"
-        ? `残り時間: ${state.remainingTime}秒`
-        : "残り時間: --秒";
+    timerText.textContent = formatRemainingTime(state.remainingTime);
 
     correctAnswerText.textContent =
       state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";
