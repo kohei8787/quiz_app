@@ -305,12 +305,16 @@ socket.on("stateUpdated", (state) => {
     surveyImage.src = state.surveyImageUrl;
   }
 
-  // 状態ごとの表示切り替え
+  // 状態ごとの表示切り替え（例題は回答練習のみ。正解発表なし）
   if (state.status === "question") {
-    statusEl.textContent = "問題に回答してください";
+    statusEl.textContent = state.isPractice
+      ? "【例題】操作確認：回答してください（採点・正解発表はありません）"
+      : "問題に回答してください";
     answerArea.style.display = "block";
   } else if (state.status === "answer_closed") {
-    statusEl.textContent = "回答受付は終了しました";
+    statusEl.textContent = state.isPractice
+      ? "【例題】回答受付は終了しました。本番の開始をお待ちください"
+      : "回答受付は終了しました";
     answerArea.style.display = "block";
     answerInput.disabled = true;
     answerSlider.disabled = true;
@@ -337,7 +341,7 @@ socket.on("stateUpdated", (state) => {
     answerArea.style.display = "none";
     rankingTitle.textContent = "最終順位";
   } else if (state.status === "started") {
-    statusEl.textContent = "イベント開始。出題を待っています";
+    statusEl.textContent = "イベント開始。例題または本番の出題を待っています";
     answerArea.style.display = "none";
   } else if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
@@ -351,8 +355,14 @@ socket.on("stateUpdated", (state) => {
 
     timerText.textContent = formatRemainingTime(state.remainingTime);
 
-    correctAnswerText.textContent =
-      state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";
+    if (state.isPractice) {
+      correctAnswerText.textContent = "例題（正解発表なし）";
+    } else {
+      correctAnswerText.textContent =
+        state.correctAnswer !== null
+          ? `正解: ${state.correctAnswer}%`
+          : "正解: --";
+    }
   }
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);

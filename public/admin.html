@@ -51,7 +51,13 @@
             <!-- イベントを開始する -->
             <button id="startEventButton" style="display: none;">イベント開始</button>
 
-            <!-- 次の問題へ進む -->
+            <!-- 例題開始（回答練習。正解発表はしない） -->
+            <button id="startPracticeButton" style="display: none;">例題を開始</button>
+
+            <!-- 例題終了（本番前の待機に戻る） -->
+            <button id="endPracticeButton" style="display: none;">例題を終了</button>
+
+            <!-- 次の問題へ進む（本番） -->
             <button id="nextQuestionButton" style="display: none;">次の問題へ</button>
 
             <!-- 回答受付を手動で終了する -->
@@ -179,6 +185,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=8"></script>
+  <script src="/js/admin.js?v=9"></script>
 </body>
 </html>
