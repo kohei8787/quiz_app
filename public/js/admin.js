@@ -1,10 +1,13 @@
 // サーバーへ接続
 const socket = io();
 
-// 管理画面として登録する（座席番号・参加コードを受け取れるようにする）
-socket.emit("registerAsAdmin");
-
 // 画面要素を取得
+const adminLoginOverlay = document.getElementById("adminLoginOverlay");
+const adminMain = document.getElementById("adminMain");
+const adminPasswordInput = document.getElementById("adminPasswordInput");
+const adminLoginButton = document.getElementById("adminLoginButton");
+const adminLoginMessage = document.getElementById("adminLoginMessage");
+
 const statusEl = document.getElementById("status");
 const startEventButton = document.getElementById("startEventButton");
 const nextQuestionButton = document.getElementById("nextQuestionButton");
@@ -45,9 +48,93 @@ let isEditingJoinCode = false;
 // 最後にサーバーから受け取った参加コード（キャンセル時に戻す用）
 let lastKnownJoinCode = "";
 
+// ログイン済みかどうか（画面表示の切替用）
+let isLoggedIn = false;
+
+// タブを閉じるまでの間だけパスワードを覚えておく（再接続用）
+const ADMIN_PASSWORD_KEY = "quizAdminPassword";
+
+function getSavedAdminPassword() {
+  try {
+    return sessionStorage.getItem(ADMIN_PASSWORD_KEY) || "";
+  } catch (e) {
+    return "";
+  }
+}
+
+function saveAdminPassword(password) {
+  try {
+    sessionStorage.setItem(ADMIN_PASSWORD_KEY, password);
+  } catch (e) {
+    // sessionStorage が使えない場合は無視
+  }
+}
+
+function clearAdminPassword() {
+  try {
+    sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
+  } catch (e) {
+    // 無視
+  }
+}
+
+function showAdminApp() {
+  isLoggedIn = true;
+  adminLoginOverlay.style.display = "none";
+  adminMain.style.display = "block";
+}
+
+function showLoginGate(message) {
+  isLoggedIn = false;
+  adminLoginOverlay.style.display = "flex";
+  adminMain.style.display = "none";
+  if (message) {
+    adminLoginMessage.textContent = message;
+  }
+}
+
+// ログイン処理
+function tryAdminLogin(password) {
+  socket.emit("adminLogin", password);
+}
+
 socket.on("connect", () => {
   statusEl.textContent = "管理画面が接続されました";
-  socket.emit("registerAsAdmin");
+  // 再接続時は保存済みパスワードで自動ログインを試みる
+  const saved = getSavedAdminPassword();
+  if (saved) {
+    tryAdminLogin(saved);
+  } else {
+    showLoginGate("");
+  }
+});
+
+socket.on("adminLoginResult", (result) => {
+  if (result.success) {
+    adminLoginMessage.textContent = "";
+    showAdminApp();
+    statusEl.textContent = result.message;
+  } else {
+    clearAdminPassword();
+    showLoginGate(result.message);
+  }
+});
+
+adminLoginButton.addEventListener("click", () => {
+  const password = adminPasswordInput.value;
+  if (!password) {
+    adminLoginMessage.textContent = "パスワードを入力してください";
+    return;
+  }
+  saveAdminPassword(password);
+  tryAdminLogin(password);
+});
+
+// Enter キーでもログインできるようにする
+adminPasswordInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    adminLoginButton.click();
+  }
 });
 
 function updateJoinCodeUI(joinCode) {
@@ -76,7 +163,6 @@ function updateJoinCodeUI(joinCode) {
 
 function updateActionButtons(state) {
   const showStart = state.status === "waiting";
-  // 次の問題へ：次の問題が残っているときだけ
   const canShowNext =
     state.hasMoreQuestions &&
     (state.status === "started" ||
@@ -90,7 +176,6 @@ function updateActionButtons(state) {
   const showRanking = state.status === "survey_results";
   const showExtendTime = state.status === "question";
   const showReopenJoin = state.status === "started" && !state.hasQuestionStarted;
-  // 終了：進行中のみ（終了画面そのものは別ボタン）
   const showFinish = state.status !== "waiting" && state.status !== "finished";
   const showReset = state.status === "finished";
 
@@ -109,6 +194,11 @@ function updateActionButtons(state) {
 }
 
 socket.on("stateUpdated", (state) => {
+  // 未ログイン時は管理用の詳細表示を更新しない
+  if (!isLoggedIn) {
+    return;
+  }
+
   if (state.status === "waiting") statusEl.textContent = "参加受付中";
   if (state.status === "started") statusEl.textContent = "開始済み（新規参加締切）";
   if (state.status === "question") statusEl.textContent = "回答受付中";
@@ -142,7 +232,6 @@ socket.on("stateUpdated", (state) => {
 
   updateJoinCodeUI(state.joinCode);
 
-  // 問題一覧
   questionList.innerHTML = "";
   (state.questionList || []).forEach((item, index) => {
     const li = document.createElement("li");
@@ -154,7 +243,6 @@ socket.on("stateUpdated", (state) => {
     questionList.appendChild(li);
   });
 
-  // 参加チーム一覧
   teamList.innerHTML = "";
   state.teams.forEach((team) => {
     const li = document.createElement("li");
@@ -166,7 +254,6 @@ socket.on("stateUpdated", (state) => {
     teamList.appendChild(li);
   });
 
-  // 回答状況（座席つき・管理者のみ）
   answerStatusList.innerHTML = "";
   const statusRows = state.answerStatus || [];
   if (statusRows.length === 0) {
@@ -184,7 +271,6 @@ socket.on("stateUpdated", (state) => {
     });
   }
 
-  // 回答一覧（公開後）
   answerList.innerHTML = "";
   state.revealedAnswers.forEach((item) => {
     const li = document.createElement("li");
@@ -195,7 +281,6 @@ socket.on("stateUpdated", (state) => {
     answerList.appendChild(li);
   });
 
-  // 順位表
   rankingList.innerHTML = "";
   state.ranking.forEach((team, index) => {
     const li = document.createElement("li");
@@ -278,10 +363,23 @@ reopenJoinPhaseButton.addEventListener("click", () => {
   socket.emit("reopenJoinPhase");
 });
 
+// 危険操作：確認ダイアログを出してから実行する
 finishEventButton.addEventListener("click", () => {
+  const ok = window.confirm(
+    "イベントを終了しますか？\n最終順位などの結果は残ります。"
+  );
+  if (!ok) {
+    return;
+  }
   socket.emit("finishEvent");
 });
 
 resetEventButton.addEventListener("click", () => {
+  const ok = window.confirm(
+    "すべてのチーム・得点・進行状況を消して、最初からやり直します。\nよろしいですか？"
+  );
+  if (!ok) {
+    return;
+  }
   socket.emit("resetEvent");
 });

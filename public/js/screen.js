@@ -16,6 +16,8 @@ const questionView = document.getElementById("questionView");
 const resultView = document.getElementById("resultView");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
+const finishedView = document.getElementById("finishedView");
+const finishedRankingList = document.getElementById("finishedRankingList");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
 
@@ -41,14 +43,16 @@ socket.on("stateUpdated", (state) => {
   const showResultView =
     state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
-  const showRankingView =
-    state.status === "ranking_revealed" || state.status === "finished";
+  const showRankingView = state.status === "ranking_revealed";
+  // イベント終了：参加受付ではなくお礼画面を表示
+  const showFinishedView = state.status === "finished";
 
   waitingSection.style.display = showWaiting ? "block" : "none";
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
+  finishedView.style.display = showFinishedView ? "block" : "none";
 
   if (state.surveyImageUrl) {
     surveyImage.src = state.surveyImageUrl;
@@ -74,7 +78,6 @@ socket.on("stateUpdated", (state) => {
     rankingTitle.textContent = "順位発表";
   } else if (state.status === "finished") {
     statusEl.textContent = "イベント終了";
-    rankingTitle.textContent = "最終順位";
   } else {
     statusEl.textContent = "イベント進行中";
   }
@@ -103,20 +106,23 @@ socket.on("stateUpdated", (state) => {
     renderGauge(state);
   }
 
-  renderRanking(state);
+  // 途中の順位発表
+  renderRanking(rankingList, state, state.status === "ranking_revealed");
+  // 終了画面の最終順位
+  renderRanking(finishedRankingList, state, state.status === "finished");
 });
 
-function renderRanking(state) {
-  rankingList.innerHTML = "";
+function renderRanking(listEl, state, shouldShow) {
+  listEl.innerHTML = "";
 
-  if (state.status !== "ranking_revealed" && state.status !== "finished") {
+  if (!shouldShow) {
     return;
   }
 
   state.ranking.forEach((team, index) => {
     const li = document.createElement("li");
     li.textContent = `${index + 1}位 ${team.name} - ${team.score}点`;
-    rankingList.appendChild(li);
+    listEl.appendChild(li);
   });
 }
 

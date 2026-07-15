@@ -24,11 +24,29 @@ const questions = JSON.parse(
   fs.readFileSync(path.join(__dirname, "data", "questions.json"), "utf-8")
 );
 
+// 管理画面用パスワード（data/admin-config.json で変更できる）
+let adminPassword = "quiz-admin";
+try {
+  const adminConfig = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "data", "admin-config.json"), "utf-8")
+  );
+  if (adminConfig.adminPassword) {
+    adminPassword = String(adminConfig.adminPassword);
+  }
+} catch (e) {
+  // 設定ファイルが無い場合はデフォルトを使う
+}
+
 // タイマー停止用にsetIntervalのIDを保持する
 let timerInterval = null;
 
 // 参加時に必要なコード（管理者が設定する。一般参加者には放送しない）
 let joinCode = "";
+
+// 管理者としてログイン済みか判定する
+function isAdminSocket(socket) {
+  return socket.data && socket.data.isAdmin === true;
+}
 
 // イベント全体の状態をまとめて管理する
 const eventState = {
@@ -281,14 +299,33 @@ io.on("connection", (socket) => {
   // 接続した時点では一般画面向けの状態を送る
   socket.emit("stateUpdated", getPublicState());
 
-  // 管理画面として登録する
-  socket.on("registerAsAdmin", () => {
+  // 管理画面ログイン（パスワード必須）
+  socket.on("adminLogin", (password) => {
+    const entered = String(password || "");
+    if (entered !== adminPassword) {
+      socket.data.isAdmin = false;
+      socket.emit("adminLoginResult", {
+        success: false,
+        message: "パスワードが正しくありません"
+      });
+      return;
+    }
+
+    socket.data.isAdmin = true;
     socket.join("admins");
+    socket.emit("adminLoginResult", {
+      success: true,
+      message: "管理画面にログインしました"
+    });
     socket.emit("stateUpdated", getAdminState());
   });
 
   // 参加コードを設定する（管理画面から）
   socket.on("setJoinCode", (code) => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
+
     const trimmedCode = String(code || "").trim();
 
     if (!trimmedCode) {
@@ -494,6 +531,9 @@ io.on("connection", (socket) => {
 
   // イベント開始（この時点で新規参加は締め切る）
   socket.on("startEvent", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status !== "waiting") {
       return;
     }
@@ -512,6 +552,9 @@ io.on("connection", (socket) => {
 
   // 次の問題へ
   socket.on("nextQuestion", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     stopTimer();
 
     const nextIndex = eventState.currentQuestionIndex + 1;
@@ -599,6 +642,9 @@ io.on("connection", (socket) => {
 
   // 回答受付終了
   socket.on("closeAnswers", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status === "question") {
       closeAnswerPhase();
       broadcastState();
@@ -607,6 +653,9 @@ io.on("connection", (socket) => {
 
   // 残り時間を延長
   socket.on("extendTime", (seconds) => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status !== "question" || eventState.remainingTime === null) {
       return;
     }
@@ -622,6 +671,9 @@ io.on("connection", (socket) => {
 
   // 回答公開
   socket.on("revealAnswers", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status !== "answer_closed") {
       return;
     }
@@ -633,6 +685,9 @@ io.on("connection", (socket) => {
 
   // 正解発表
   socket.on("revealCorrectAnswer", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status !== "answers_revealed") {
       return;
     }
@@ -646,6 +701,9 @@ io.on("connection", (socket) => {
 
   // アンケート結果公開（問題に紐づいた画像をセット）
   socket.on("showSurveyResults", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status !== "correct_revealed") {
       return;
     }
@@ -662,6 +720,9 @@ io.on("connection", (socket) => {
 
   // 順位発表
   socket.on("showRanking", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status !== "survey_results") {
       return;
     }
@@ -672,6 +733,9 @@ io.on("connection", (socket) => {
 
   // 参加受付へ戻す（まだ問題を出していない開始直後のみ）
   socket.on("reopenJoinPhase", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status === "waiting" || eventState.hasQuestionStarted) {
       return;
     }
@@ -682,6 +746,9 @@ io.on("connection", (socket) => {
 
   // イベント終了（順位などの結果を残す）
   socket.on("finishEvent", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     if (eventState.status === "waiting" || eventState.status === "finished") {
       return;
     }
@@ -691,6 +758,9 @@ io.on("connection", (socket) => {
 
   // 新規イベント用に完全リセット（終了後など）
   socket.on("resetEvent", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
     resetEventState();
     broadcastState();
   });
