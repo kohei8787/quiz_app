@@ -16,10 +16,14 @@ const joinSectionTitle = document.getElementById("joinSectionTitle");
 const surveyImage = document.getElementById("surveyImage");
 const rankingTitle = document.getElementById("rankingTitle");
 const currentQuestionText = document.getElementById("currentQuestionText");
+const questionProgress = document.getElementById("questionProgress");
+const questionBadgeNum = document.getElementById("questionBadgeNum");
+const questionHint = document.getElementById("questionHint");
 const answerArea = document.getElementById("answerArea");
 const answerInput = document.getElementById("answerInput");
 const answerSlider = document.getElementById("answerSlider");
-const sliderValue = document.getElementById("sliderValue");
+const answerDecButton = document.getElementById("answerDecButton");
+const answerIncButton = document.getElementById("answerIncButton");
 const submitAnswerButton = document.getElementById("submitAnswerButton");
 const answerMessage = document.getElementById("answerMessage");
 const joinSection = document.getElementById("joinSection");
@@ -30,7 +34,7 @@ const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
 const rankingList = document.getElementById("rankingList");
 const myRankText = document.getElementById("myRankText");
-const timerText = document.getElementById("timerText");
+const timerValue = document.getElementById("timerValue");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const scoreText = document.getElementById("scoreText");
 const gaugeContainer = document.getElementById("gaugeContainer");
@@ -55,16 +59,62 @@ let savedSeatNumber = "";
 // 直近のイベント状態（参加受付中かどうかの判定用）
 let currentEventStatus = "waiting";
 
-// 残り時間を mm:ss 形式の文字列にする
+// 残り時間を「◯秒」形式にする（モックアップ準拠）
 function formatRemainingTime(seconds) {
   if (typeof seconds !== "number") {
-    return "残り時間: --:--";
+    return "--秒";
   }
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const mm = String(mins).padStart(2, "0");
-  const ss = String(secs).padStart(2, "0");
-  return `残り時間: ${mm}:${ss}`;
+  return `${seconds}秒`;
+}
+
+// 回答値を 0〜100 の整数に丸める
+function clampAnswer(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return 50;
+  }
+  return Math.max(0, Math.min(100, Math.round(num)));
+}
+
+function setAnswerValue(value) {
+  const next = clampAnswer(value);
+  answerInput.value = String(next);
+  answerSlider.value = String(next);
+}
+
+function setAnswerControlsEnabled(enabled) {
+  answerInput.disabled = !enabled;
+  answerSlider.disabled = !enabled;
+  answerDecButton.disabled = !enabled;
+  answerIncButton.disabled = !enabled;
+  submitAnswerButton.disabled = !enabled;
+}
+
+function updateQuestionMeta(state) {
+  const total = state.questionCount || 0;
+
+  if (state.isPractice) {
+    questionProgress.textContent = "例題";
+    questionBadgeNum.textContent = "例題";
+    questionHint.textContent = "操作確認です。0〜100%の好きな値を選んでください";
+    return;
+  }
+
+  const current =
+    typeof state.currentQuestionIndex === "number" &&
+    state.currentQuestionIndex >= 0
+      ? state.currentQuestionIndex + 1
+      : null;
+
+  if (current !== null && total > 0) {
+    questionProgress.textContent = `第${current}問 / 全${total}問`;
+    questionBadgeNum.textContent = `${current} / ${total}`;
+  } else {
+    questionProgress.textContent = total > 0 ? `全${total}問` : "第--問 / 全--問";
+    questionBadgeNum.textContent = "-- / --";
+  }
+
+  questionHint.textContent = "0~100%の範囲で予測してください";
 }
 
 // 再接続用にブラウザへ保存するキー
@@ -251,12 +301,8 @@ socket.on("stateUpdated", (state) => {
   if (state.currentQuestionId !== lastQuestionId) {
     lastQuestionId = state.currentQuestionId;
     answerMessage.textContent = "";
-    answerInput.value = "";
-    answerSlider.value = 50;
-    sliderValue.textContent = "50";
-    answerInput.disabled = false;
-    answerSlider.disabled = false;
-    submitAnswerButton.disabled = false;
+    setAnswerValue(50);
+    setAnswerControlsEnabled(true);
     gaugeContainer.innerHTML = "";
     myTeamResult.style.display = "none";
     myTeamResult.textContent = "";
@@ -278,6 +324,13 @@ socket.on("stateUpdated", (state) => {
     state.status === "ranking_revealed" || state.status === "finished";
 
   currentEventStatus = state.status;
+
+  // 出題・回答中はタイトルを隠してモックアップ寄りの画面にする
+  document.body.classList.toggle(
+    "answering",
+    showQuestionView &&
+      (state.status === "question" || state.status === "answer_closed")
+  );
 
   joinSection.style.display = showJoinSection ? "block" : "none";
   questionView.style.display = showQuestionView ? "block" : "none";
@@ -316,9 +369,7 @@ socket.on("stateUpdated", (state) => {
       ? "【例題】回答受付は終了しました。本番の開始をお待ちください"
       : "回答受付は終了しました";
     answerArea.style.display = "block";
-    answerInput.disabled = true;
-    answerSlider.disabled = true;
-    submitAnswerButton.disabled = true;
+    setAnswerControlsEnabled(false);
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "全チームの回答を表示中";
     answerArea.style.display = "none";
@@ -353,7 +404,8 @@ socket.on("stateUpdated", (state) => {
       ? state.currentQuestion.questionText
       : "まだ問題は表示されていません";
 
-    timerText.textContent = formatRemainingTime(state.remainingTime);
+    timerValue.textContent = formatRemainingTime(state.remainingTime);
+    updateQuestionMeta(state);
 
     if (state.isPractice) {
       correctAnswerText.textContent = "例題（正解発表なし）";
@@ -367,8 +419,8 @@ socket.on("stateUpdated", (state) => {
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);
   scoreText.textContent = myTeam
-    ? `現在の得点: ${myTeam.score}点`
-    : "現在の得点: --点";
+    ? `累計スコア ${myTeam.score} pt`
+    : "累計スコア -- pt";
 
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
@@ -500,24 +552,34 @@ function renderGauge(state, myTeam) {
   }
 }
 
+answerDecButton.addEventListener("click", () => {
+  setAnswerValue(clampAnswer(answerInput.value) - 1);
+});
+
+answerIncButton.addEventListener("click", () => {
+  setAnswerValue(clampAnswer(answerInput.value) + 1);
+});
+
 answerSlider.addEventListener("input", () => {
-    const value = answerSlider.value;
-    sliderValue.textContent = value;
-    answerInput.value = value;
-  });
+  setAnswerValue(answerSlider.value);
+});
 
-  answerInput.addEventListener("input", () => {
-    const value = answerInput.value;
-    if (value === "") {
-      return;
-    }
-    answerSlider.value = value;
-    sliderValue.textContent = value;
-  });
+answerInput.addEventListener("change", () => {
+  setAnswerValue(answerInput.value);
+});
 
-  // 回答送信
+answerInput.addEventListener("blur", () => {
+  if (answerInput.value === "") {
+    setAnswerValue(50);
+    return;
+  }
+  setAnswerValue(answerInput.value);
+});
+
+// 回答送信
 submitAnswerButton.addEventListener("click", () => {
-  const answer = Number(answerInput.value);
+  const answer = clampAnswer(answerInput.value);
+  setAnswerValue(answer);
   socket.emit("submitAnswer", answer);
 });
 
@@ -526,7 +588,6 @@ socket.on("answerResult", (result) => {
   answerMessage.textContent = result.message;
 
   if (result.success) {
-    answerInput.disabled = true;
-    submitAnswerButton.disabled = true;
+    setAnswerControlsEnabled(false);
   }
 });
