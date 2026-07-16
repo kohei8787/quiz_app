@@ -22,6 +22,68 @@
 
 例題は操作確認専用で、正解発表・採点は行いません。例題の文面は `data/questions.json` の `practice` で変更できます。
 
+### 画面遷移
+
+各 HTML は URL で直接開きます（画面間のリンクはありません）。  
+参加者・スクリーン表示の見た目は、管理画面の操作で変わる共通ステータスに追従します。
+
+```mermaid
+flowchart TD
+  subgraph pages [入口]
+    Admin["管理画面<br/>/admin.html"]
+    Player["参加者画面<br/>/player.html"]
+    Screen["スクリーン表示<br/>/screen.html"]
+  end
+
+  Admin -->|操作| StatusFlow
+  StatusFlow -->|stateUpdated| Player
+  StatusFlow -->|stateUpdated| Screen
+
+  subgraph StatusFlow [イベント進行]
+    Waiting["参加受付中<br/>waiting"]
+    Started["開始済み<br/>started"]
+    Question["出題・回答受付<br/>question"]
+    Closed["回答受付終了<br/>answer_closed"]
+    Answers["回答公開<br/>answers_revealed"]
+    Correct["正解発表<br/>correct_revealed"]
+    Survey["アンケート結果<br/>survey_results"]
+    Ranking["順位発表<br/>ranking_revealed"]
+    Finished["イベント終了<br/>finished"]
+
+    Waiting -->|イベント開始| Started
+    Started -->|参加受付に戻す| Waiting
+    Started -->|例題を開始| Question
+    Started -->|次の問題へ| Question
+    Question -->|回答受付終了<br/>全員回答 / タイマー| Closed
+    Closed -->|例題を終了<br/>例題のみ| Started
+    Closed -->|回答公開<br/>本番のみ| Answers
+    Answers -->|正解発表| Correct
+    Correct -->|アンケート結果公開| Survey
+    Survey -->|順位発表| Ranking
+    Ranking -->|次の問題へ| Question
+    Ranking -->|イベント終了| Finished
+    Correct -->|次の問題へ| Question
+    Survey -->|次の問題へ| Question
+    Finished -->|リセット| Waiting
+  end
+```
+
+| ステータス | 参加者画面 | スクリーン表示 |
+|------------|------------|----------------|
+| `waiting` | 参加フォーム / チーム情報 | 参加受付中 |
+| `started` | 待機（出題待ち） | 待機 |
+| `question` / `answer_closed` | 問題・回答 UI | 問題表示 |
+| `answers_revealed` / `correct_revealed` | 結果（ゲージ・得点） | 結果表示 |
+| `survey_results` | アンケート結果 | アンケート結果 |
+| `ranking_revealed` | 順位 | 順位 |
+| `finished` | 最終順位 | 終了＋最終順位 |
+
+補足:
+
+- **例題**（`question` → `answer_closed` → `started`）では回答公開以降のステップはありません
+- **イベント終了**は、参加受付中・終了済み以外のほぼどの状態からも実行できます
+- 管理画面はログイン後、現在のステータスに応じた操作ボタンだけが表示されます
+
 ### 管理画面パスワード
 
 初期パスワードは `quiz-admin` です。  
