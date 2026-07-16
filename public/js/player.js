@@ -468,72 +468,42 @@ function renderGauge(state, myTeam) {
     return;
   }
 
-  const showCorrectPin = state.status === "correct_revealed";
-  const correctValue = state.correctAnswer !== null ? state.correctAnswer : 0;
-
-  const wrapper = document.createElement("div");
-  wrapper.className = "gauge-track-wrapper";
-
-  const track = document.createElement("div");
-  track.className = "gauge-track";
-
-  const fill = document.createElement("div");
-  fill.className = "gauge-fill";
-  fill.style.width = "100%";
-  track.appendChild(fill);
-
-  wrapper.appendChild(track);
+  const showCorrect = state.status === "correct_revealed";
+  const correctValue =
+    state.correctAnswer !== null ? clampAnswer(state.correctAnswer) : null;
 
   let myAnswer = null;
+  const teamMarkers = [];
 
   state.revealedAnswers.forEach((item) => {
     if (item.answer === null) {
       return;
     }
 
-    const percent = Math.max(0, Math.min(100, item.answer));
-    const pin = document.createElement("div");
-    pin.className = item.teamName === myTeamName ? "gauge-pin own" : "gauge-pin";
-    pin.style.left = `${percent}%`;
-    wrapper.appendChild(pin);
+    const percent = clampAnswer(item.answer);
+    const isOwn = item.teamName === myTeamName;
 
-    const label = document.createElement("div");
-    label.className = "gauge-label";
-    label.textContent = item.teamName;
-    label.style.left = `${percent}%`;
-    wrapper.appendChild(label);
-
-    if (item.teamName === myTeamName) {
-      myAnswer = item.answer;
+    if (isOwn) {
+      myAnswer = percent;
     }
+
+    teamMarkers.push({
+      teamName: item.teamName,
+      percent,
+      isOwn
+    });
   });
 
-  if (showCorrectPin) {
-    const correctPin = document.createElement("div");
-    correctPin.className = "gauge-pin correct";
-    correctPin.style.left = "0%";
+  const tacho = renderTachometer({
+    teamMarkers,
+    myAnswer,
+    correctValue: showCorrect ? correctValue : null,
+    showCorrect
+  });
 
-    const correctLabel = document.createElement("div");
-    correctLabel.className = "gauge-label";
-    correctLabel.textContent = `正解: ${correctValue}%`;
-    correctLabel.style.left = `${correctValue}%`;
+  gaugeContainer.appendChild(tacho.root);
 
-    wrapper.appendChild(correctPin);
-    wrapper.appendChild(correctLabel);
-
-    requestAnimationFrame(() => {
-      correctPin.style.left = `${correctValue}%`;
-    });
-  }
-
-  gaugeContainer.appendChild(wrapper);
-
-  const scale = document.createElement("div");
-  scale.className = "gauge-scale";
-  scale.innerHTML = '<span>0%</span><span>50%</span><span>100%</span>';
-  gaugeContainer.appendChild(scale);
-
-  const showMyTeamResult = myTeam && state.status === "correct_revealed";
+  const showMyTeamResult = myTeam && showCorrect;
   if (showMyTeamResult) {
     const answerText = myAnswer !== null ? `${myAnswer}%` : "未回答";
     let scoreDeltaText = "";
@@ -547,9 +517,232 @@ function renderGauge(state, myTeam) {
       scoreDeltaText = `（この問題の得点: ${delta >= 0 ? "+" + delta : delta}点）`;
     }
 
-    myTeamResult.textContent = `自チーム: ${myTeam.name} / 回答: ${answerText} ${scoreDeltaText}`;
+    myTeamResult.textContent = `${myTeam.name} / 回答: ${answerText} ${scoreDeltaText}`;
     myTeamResult.style.display = "block";
   }
+}
+
+const TACHO = {
+  cx: 150,
+  cy: 150,
+  radius: 108,
+  needleLen: 92
+};
+
+function percentToRad(percent) {
+  return Math.PI * (1 - percent / 100);
+}
+
+function tachoPoint(percent, radius = TACHO.radius) {
+  const rad = percentToRad(percent);
+  return {
+    x: TACHO.cx + radius * Math.cos(rad),
+    y: TACHO.cy - radius * Math.sin(rad)
+  };
+}
+
+function valueToRotateDeg(value) {
+  return value * 1.8 - 90;
+}
+
+function createSvgEl(tag, attrs = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.entries(attrs).forEach(([key, val]) => {
+    el.setAttribute(key, String(val));
+  });
+  return el;
+}
+
+function renderTachometer({ teamMarkers, myAnswer, correctValue, showCorrect }) {
+  const root = document.createElement("div");
+  root.className = "tacho-gauge";
+
+  const svg = createSvgEl("svg", {
+    viewBox: "0 0 300 180",
+    class: "tacho-svg",
+    role: "img",
+    "aria-label": "回答タコメーター"
+  });
+
+  const defs = createSvgEl("defs");
+  const gradient = createSvgEl("linearGradient", {
+    id: "tachoArcGradient",
+    x1: "0%",
+    y1: "0%",
+    x2: "100%",
+    y2: "0%"
+  });
+  gradient.appendChild(
+    createSvgEl("stop", { offset: "0%", "stop-color": "#93c5fd" })
+  );
+  gradient.appendChild(
+    createSvgEl("stop", { offset: "100%", "stop-color": "#2563eb" })
+  );
+  defs.appendChild(gradient);
+  svg.appendChild(defs);
+
+  const arcStart = tachoPoint(0, TACHO.radius);
+  const arcEnd = tachoPoint(100, TACHO.radius);
+
+  svg.appendChild(
+    createSvgEl("path", {
+      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
+      class: "tacho-arc-bg"
+    })
+  );
+
+  svg.appendChild(
+    createSvgEl("path", {
+      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
+      class: "tacho-arc-fill"
+    })
+  );
+
+  [0, 25, 50, 75, 100].forEach((tick) => {
+    const outer = tachoPoint(tick, TACHO.radius);
+    const inner = tachoPoint(tick, TACHO.radius - (tick % 50 === 0 ? 14 : 8));
+    svg.appendChild(
+      createSvgEl("line", {
+        x1: inner.x,
+        y1: inner.y,
+        x2: outer.x,
+        y2: outer.y,
+        class: tick % 50 === 0 ? "tacho-tick-major" : "tacho-tick-minor"
+      })
+    );
+
+    if (tick % 50 === 0) {
+      const labelPoint = tachoPoint(tick, TACHO.radius - 24);
+      const label = createSvgEl("text", {
+        x: labelPoint.x,
+        y: labelPoint.y,
+        class: "tacho-scale-label",
+        "text-anchor": "middle",
+        "dominant-baseline": "middle"
+      });
+      label.textContent = `${tick}`;
+      svg.appendChild(label);
+    }
+  });
+
+  teamMarkers.forEach((marker) => {
+    if (marker.isOwn) {
+      return;
+    }
+
+    const point = tachoPoint(marker.percent, TACHO.radius - 2);
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx: point.x,
+        cy: point.y,
+        r: 5,
+        class: "tacho-team-dot"
+      })
+    );
+  });
+
+  if (myAnswer !== null) {
+    const ownNeedle = createNeedleGroup("tacho-needle tacho-needle-own", myAnswer);
+    svg.appendChild(ownNeedle);
+  }
+
+  if (showCorrect && correctValue !== null) {
+    const correctNeedle = createNeedleGroup(
+      "tacho-needle tacho-needle-correct",
+      correctValue
+    );
+    svg.appendChild(correctNeedle);
+  }
+
+  svg.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy,
+      r: 10,
+      class: "tacho-hub"
+    })
+  );
+
+  svg.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy,
+      r: 4,
+      class: "tacho-hub-center"
+    })
+  );
+
+  root.appendChild(svg);
+
+  const centerValue = document.createElement("div");
+  centerValue.className = "tacho-center-value";
+  if (showCorrect && correctValue !== null) {
+    centerValue.innerHTML = `<span class="tacho-center-label">正解</span><span class="tacho-center-num">${correctValue}<small>%</small></span>`;
+  } else if (myAnswer !== null) {
+    centerValue.innerHTML = `<span class="tacho-center-label">あなた</span><span class="tacho-center-num">${myAnswer}<small>%</small></span>`;
+  } else {
+    centerValue.innerHTML = `<span class="tacho-center-label">回答</span><span class="tacho-center-num">--<small>%</small></span>`;
+  }
+  root.appendChild(centerValue);
+
+  const legend = document.createElement("ul");
+  legend.className = "tacho-legend";
+
+  teamMarkers
+    .slice()
+    .sort((a, b) => a.percent - b.percent)
+    .forEach((marker) => {
+      const li = document.createElement("li");
+      li.className = marker.isOwn ? "tacho-legend-own" : "tacho-legend-item";
+      li.innerHTML = `<span class="tacho-legend-name">${marker.teamName}${marker.isOwn ? "（あなた）" : ""}</span><span class="tacho-legend-value">${marker.percent}%</span>`;
+      legend.appendChild(li);
+    });
+
+  if (showCorrect && correctValue !== null) {
+    const li = document.createElement("li");
+    li.className = "tacho-legend-correct";
+    li.innerHTML = `<span class="tacho-legend-name">正解</span><span class="tacho-legend-value">${correctValue}%</span>`;
+    legend.appendChild(li);
+  }
+
+  root.appendChild(legend);
+
+  requestAnimationFrame(() => {
+    root.querySelectorAll(".tacho-needle").forEach((needle) => {
+      const target = Number(needle.dataset.target);
+      needle.style.transform = `rotate(${valueToRotateDeg(target)}deg)`;
+    });
+  });
+
+  return { root };
+}
+
+function createNeedleGroup(className, value) {
+  const group = createSvgEl("g", {
+    class: `${className} tacho-needle`
+  });
+  group.dataset.target = String(value);
+
+  group.appendChild(
+    createSvgEl("line", {
+      x1: TACHO.cx,
+      y1: TACHO.cy,
+      x2: TACHO.cx,
+      y2: TACHO.cy - TACHO.needleLen,
+      class: "tacho-needle-line"
+    })
+  );
+
+  group.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy - TACHO.needleLen + 6,
+      r: 4,
+      class: "tacho-needle-tip"
+    })
+  );
+
+  return group;
 }
 
 answerDecButton.addEventListener("click", () => {
