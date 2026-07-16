@@ -101,14 +101,13 @@
     </div>
 
     <!-- 回答公開・正解発表用のエリア -->
-    <div id="resultView" class="card" style="display: none;">
+    <div id="resultView" class="card result-card" style="display: none;">
       <h2 id="resultTitle">回答公開</h2>
-      <p id="correctAnswerText">正解: --</p>
+      <p id="correctAnswerText" class="result-correct-text">正解: --</p>
       <div id="revealedAnswersSection">
-        <h3>全チームの回答</h3>
-        <div id="gaugeContainer"></div>
+        <div id="gaugeContainer" class="tacho-container"></div>
       </div>
-      <div id="myTeamResult" style="display: none; margin-top: 12px; text-align: left;"></div>
+      <div id="myTeamResult" class="my-team-result" style="display: none;"></div>
     </div>
 
     <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
@@ -129,6 +128,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=10"></script>
+  <script src="/js/player.js?v=12"></script>
 </body>
 </html>
