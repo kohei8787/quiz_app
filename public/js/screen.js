@@ -4,17 +4,34 @@ const socket = io();
 // 画面要素を取得
 const statusEl = document.getElementById("status");
 const teamList = document.getElementById("teamList");
+const waitingTitle = document.getElementById("waitingTitle");
 const currentQuestionText = document.getElementById("currentQuestionText");
 const timerText = document.getElementById("timerText");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const gaugeContainer = document.getElementById("gaugeContainer");
 const rankingList = document.getElementById("rankingList");
+const rankingTitle = document.getElementById("rankingTitle");
 const waitingSection = document.getElementById("waitingSection");
 const questionView = document.getElementById("questionView");
 const resultView = document.getElementById("resultView");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
+const finishedView = document.getElementById("finishedView");
+const finishedRankingList = document.getElementById("finishedRankingList");
 const resultTitle = document.getElementById("resultTitle");
+const surveyImage = document.getElementById("surveyImage");
+
+// 残り時間を mm:ss 形式の文字列にする
+function formatRemainingTime(seconds) {
+  if (typeof seconds !== "number") {
+    return "残り時間: --:--";
+  }
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const mm = String(mins).padStart(2, "0");
+  const ss = String(secs).padStart(2, "0");
+  return `残り時間: ${mm}:${ss}`;
+}
 
 socket.on("connect", () => {
   statusEl.textContent = "スクリーン画面が接続されました";
@@ -30,27 +47,42 @@ socket.on("stateUpdated", (state) => {
     teamList.appendChild(li);
   });
 
-  const isWaiting = state.status === "waiting" || state.status === "finished";
-  const showQuestionView = state.status === "question" || state.status === "answer_closed" || state.status === "started";
-  const showResultView = state.status === "answers_revealed" || state.status === "correct_revealed";
+  const showWaiting = state.status === "waiting";
+  const showQuestionView =
+    state.status === "question" ||
+    state.status === "answer_closed" ||
+    state.status === "started";
+  const showResultView =
+    state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
   const showRankingView = state.status === "ranking_revealed";
+  // イベント終了：参加受付ではなくお礼画面を表示
+  const showFinishedView = state.status === "finished";
 
-  waitingSection.style.display = isWaiting ? "block" : "none";
+  waitingSection.style.display = showWaiting ? "block" : "none";
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
+  finishedView.style.display = showFinishedView ? "block" : "none";
 
-  if (state.status === "waiting" || state.status === "finished") {
+  if (state.surveyImageUrl) {
+    surveyImage.src = state.surveyImageUrl;
+  }
+
+  if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
+    waitingTitle.textContent = "参加受付中";
     currentQuestionText.textContent = "出題を待っています";
-    timerText.textContent = "残り時間: --秒";
+    timerText.textContent = "残り時間: --:--";
     correctAnswerText.textContent = "正解: --";
     gaugeContainer.innerHTML = "";
-    rankingList.innerHTML = "";
   } else if (state.status === "question" || state.status === "answer_closed") {
-    statusEl.textContent = "問題表示";
+    statusEl.textContent = state.isPractice
+      ? state.status === "answer_closed"
+        ? "例題：回答受付終了"
+        : "例題：回答受付中"
+      : "問題表示";
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "回答公開";
   } else if (state.status === "correct_revealed") {
@@ -59,6 +91,9 @@ socket.on("stateUpdated", (state) => {
     statusEl.textContent = "アンケート結果公開";
   } else if (state.status === "ranking_revealed") {
     statusEl.textContent = "順位発表";
+    rankingTitle.textContent = "順位発表";
+  } else if (state.status === "finished") {
+    statusEl.textContent = "イベント終了";
   } else {
     statusEl.textContent = "イベント進行中";
   }
@@ -68,13 +103,17 @@ socket.on("stateUpdated", (state) => {
       ? state.currentQuestion.questionText
       : "出題を待っています";
 
-    timerText.textContent =
-      typeof state.remainingTime === "number"
-        ? `残り時間: ${state.remainingTime}秒`
-        : "残り時間: --秒";
+    timerText.textContent = formatRemainingTime(state.remainingTime);
 
-    correctAnswerText.textContent =
-      state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";
+    // 例題では正解を表示しない
+    if (state.isPractice) {
+      correctAnswerText.textContent = "例題（正解発表なし）";
+    } else {
+      correctAnswerText.textContent =
+        state.correctAnswer !== null
+          ? `正解: ${state.correctAnswer}%`
+          : "正解: --";
+    }
   }
 
   if (state.status === "answers_revealed") {
@@ -83,26 +122,27 @@ socket.on("stateUpdated", (state) => {
     resultTitle.textContent = "正解発表";
   }
 
-  // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
     renderGauge(state);
   }
 
-  // 順位発表画面の描画
-  renderRanking(state);
+  // 途中の順位発表
+  renderRanking(rankingList, state, state.status === "ranking_revealed");
+  // 終了画面の最終順位
+  renderRanking(finishedRankingList, state, state.status === "finished");
 });
 
-function renderRanking(state) {
-  rankingList.innerHTML = "";
+function renderRanking(listEl, state, shouldShow) {
+  listEl.innerHTML = "";
 
-  if (state.status !== "ranking_revealed") {
+  if (!shouldShow) {
     return;
   }
 
   state.ranking.forEach((team, index) => {
     const li = document.createElement("li");
     li.textContent = `${index + 1}位 ${team.name} - ${team.score}点`;
-    rankingList.appendChild(li);
+    listEl.appendChild(li);
   });
 }
 
@@ -155,7 +195,6 @@ function renderGauge(state) {
     }
   });
 
-
   if (showCorrectPin) {
     const correctPin = document.createElement("div");
     correctPin.className = "gauge-pin correct";
@@ -178,6 +217,6 @@ function renderGauge(state) {
 
   const scale = document.createElement("div");
   scale.className = "gauge-scale";
-  scale.innerHTML = '<span>0%</span><span>50%</span><span>100%</span>';
+  scale.innerHTML = "<span>0%</span><span>50%</span><span>100%</span>";
   gaugeContainer.appendChild(scale);
 }

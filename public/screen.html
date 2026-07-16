@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>スクリーン表示</title>
 
-  <!-- スクリーン表示画面専用のCSS -->
+  <!-- スクリーン表示画面専用のCSS（プロジェクター向け大画面） -->
   <link rel="stylesheet" href="/css/screen.css" />
 </head>
 <body>
   <main class="container">
-    <!-- 画面タイトル -->
-    <h1>スクリーン表示</h1>
+    <!-- 控えめな画面ラベル -->
+    <p class="screen-brand">リアルタイムクイズ</p>
 
     <!-- 現在の状態を表示する場所 -->
     <p id="status">接続中...</p>
 
     <!-- 参加受付中に表示するエリア -->
     <div id="waitingSection" class="card">
-      <h2>参加受付中</h2>
+      <h2 id="waitingTitle">参加受付中</h2>
 
       <!-- 参加済みチーム一覧 -->
       <ul id="teamList"></ul>
@@ -31,8 +31,8 @@
       <!-- 現在の問題文 -->
       <p id="currentQuestionText">出題を待っています</p>
 
-      <!-- 残り時間 -->
-      <p id="timerText">残り時間: --秒</p>
+      <!-- 残り時間（大きく表示） -->
+      <p id="timerText">残り時間: --:--</p>
     </div>
 
     <!-- 回答公開・正解発表用のエリア -->
@@ -42,17 +42,25 @@
       <div id="gaugeContainer" style="margin: 24px 0;"></div>
     </div>
 
-    <!-- アンケート結果公開用のエリア（管理画面から遷移） -->
+    <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
     <div id="surveyResultsView" class="card" style="display: none;">
       <h2>アンケート結果公開</h2>
-      <p>グラフを表示します</p>
-      <img src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
+      <p class="survey-caption">グラフを表示します</p>
+      <img id="surveyImage" src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" />
     </div>
 
-    <!-- 順位発表用のエリア（アンケート結果公開の次に表示） -->
+    <!-- 順位発表（問題ごとの順位） -->
     <div id="rankingView" class="card" style="display: none;">
-      <h2>順位発表</h2>
+      <h2 id="rankingTitle">順位発表</h2>
       <ul id="rankingList"></ul>
+    </div>
+
+    <!-- イベント終了時のお礼画面 -->
+    <div id="finishedView" class="card finished-view" style="display: none;">
+      <h2 id="finishedTitle">ご参加ありがとうございました</h2>
+      <p class="finished-message">本日のクイズは終了です</p>
+      <h3 class="finished-ranking-heading">最終順位</h3>
+      <ul id="finishedRankingList"></ul>
     </div>
   </main>
 
@@ -60,6 +68,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=3"></script>
+  <script src="/js/screen.js?v=8"></script>
 </body>
 </html>

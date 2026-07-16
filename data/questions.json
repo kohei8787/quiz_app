@@ -1,12 +1,20 @@
-[
-  {
-    "id": 1,
-    "questionText": "社内アンケートで『朝食を毎日食べる』と答えた人の割合は？",
-    "correctAnswer": 68
+{
+  "practice": {
+    "id": "practice",
+    "questionText": "【例題】スマホやPCの操作確認です。上下ボタンか数字入力で、あなたが好きな数字（0〜100）を選んで「回答を確定する」を押してください。正解発表はありません。"
   },
-  {
-    "id": 2,
-    "questionText": "社内アンケートで『リモートワークを週3日以上希望する』と答えた人の割合は？",
-    "correctAnswer": 54
-  }
-]
+  "questions": [
+    {
+      "id": 1,
+      "questionText": "社内アンケートで『朝食を毎日食べる』と答えた人の割合は？",
+      "correctAnswer": 68,
+      "surveyImage": "/data/survey/1.svg"
+    },
+    {
+      "id": 2,
+      "questionText": "社内アンケートで『リモートワークを週3日以上希望する』と答えた人の割合は？",
+      "correctAnswer": 54,
+      "surveyImage": "/data/survey/2.svg"
+    }
+  ]
+}

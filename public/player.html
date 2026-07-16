@@ -45,52 +45,81 @@
       <p id="joinMessage"></p>
     </div>
 
-    <!-- 問題表示用のエリア -->
-    <div id="questionView" class="card" style="display: none;">
-      <h2>現在の問題</h2>
-      <p id="currentQuestionText">まだ問題は表示されていません</p>
-      <p id="timerText">残り時間: --秒</p>
-      <p id="scoreText">現在の得点: --点</p>
+    <!-- 問題・回答画面（出題中） -->
+    <div id="questionView" class="question-phase" style="display: none;">
+      <header class="player-header">
+        <p id="questionProgress" class="question-progress">第--問 / 全--問</p>
+        <div class="header-meta">
+          <p id="scoreText" class="score-text">累計スコア -- pt</p>
+          <p id="timerText" class="timer-text">
+            <span class="timer-icon" aria-hidden="true"></span>
+            <span id="timerValue">--秒</span>
+          </p>
+        </div>
+      </header>
+
+      <section class="card question-card">
+        <div class="question-badge">
+          <span class="badge-label">QUESTION</span>
+          <span id="questionBadgeNum" class="badge-num">-- / --</span>
+        </div>
+        <p id="currentQuestionText" class="question-text">まだ問題は表示されていません</p>
+        <p id="questionHint" class="question-hint">0~100%の範囲で予測してください</p>
+      </section>
 
       <!-- 回答入力エリア -->
-      <div id="answerArea" style="display: none;">
-        <!-- 回答入力欄。0〜100の整数を想定 -->
-        <input id="answerInput" type="number" min="0" max="100" placeholder="0〜100を入力" />
-
-        <!-- スライダー入力 -->
-        <label for="answerSlider">スライダーで選択</label>
-        <input id="answerSlider" type="range" min="0" max="100" value="50" />
-        <p>選択値: <span id="sliderValue">50</span>%</p>
-
-        <!-- 回答送信ボタン -->
-        <button id="submitAnswerButton">決定</button>
-
-        <!-- 回答受付結果メッセージ -->
-        <p id="answerMessage"></p>
-      </div>
+      <section id="answerArea" class="card answer-card" style="display: none;">
+        <h2 class="answer-title">あなたの回答</h2>
+        <div class="answer-stepper">
+          <button id="answerDecButton" type="button" class="stepper-btn" aria-label="1減らす">
+            <span aria-hidden="true">&#9660;</span>
+          </button>
+          <div class="answer-value-wrap">
+            <input id="answerInput" type="number" min="0" max="100" value="50" inputmode="numeric" />
+            <span class="answer-unit">%</span>
+          </div>
+          <button id="answerIncButton" type="button" class="stepper-btn" aria-label="1増やす">
+            <span aria-hidden="true">&#9650;</span>
+          </button>
+        </div>
+        <div class="answer-slider-wrap">
+          <span class="answer-slider-scale" aria-hidden="true">0</span>
+          <input
+            id="answerSlider"
+            class="answer-slider"
+            type="range"
+            min="0"
+            max="100"
+            value="50"
+            aria-label="スライダーで回答を選択"
+          />
+          <span class="answer-slider-scale" aria-hidden="true">100</span>
+        </div>
+        <button id="submitAnswerButton" type="button" class="submit-answer-btn">回答を確定する</button>
+        <p id="answerMessage" class="answer-message"></p>
+      </section>
     </div>
 
     <!-- 回答公開・正解発表用のエリア -->
-    <div id="resultView" class="card" style="display: none;">
+    <div id="resultView" class="card result-card" style="display: none;">
       <h2 id="resultTitle">回答公開</h2>
-      <p id="correctAnswerText">正解: --</p>
+      <p id="correctAnswerText" class="result-correct-text">正解: --</p>
       <div id="revealedAnswersSection">
-        <h3>全チームの回答</h3>
-        <div id="gaugeContainer"></div>
+        <div id="gaugeContainer" class="tacho-container"></div>
       </div>
-      <div id="myTeamResult" style="display: none; margin-top: 12px; text-align: left;"></div>
+      <div id="myTeamResult" class="my-team-result" style="display: none;"></div>
     </div>
 
-    <!-- アンケート結果公開用のエリア（管理画面から遷移） -->
+    <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
     <div id="surveyResultsView" class="card" style="display: none;">
       <h2>アンケート結果公開</h2>
       <p>グラフを表示します</p>
-      <img src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
+      <img id="surveyImage" src="/data/image/graph-placeholder.svg" alt="アンケート結果グラフ" style="max-width: 100%; height: auto;" />
     </div>
 
-    <!-- 順位発表用のエリア（アンケート結果公開の次に表示） -->
+    <!-- 順位発表用のエリア（アンケート結果公開の次／イベント終了時） -->
     <div id="rankingView" class="card" style="display: none;">
-      <h2>順位発表</h2>
+      <h2 id="rankingTitle">順位発表</h2>
       <p id="myRankText">あなたの順位: --</p>
       <ul id="rankingList"></ul>
     </div>
@@ -99,6 +128,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=5"></script>
+  <script src="/js/player.js?v=12"></script>
 </body>
 </html>

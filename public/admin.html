@@ -9,8 +9,19 @@
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
 <body>
-  <!-- admin-container: 管理画面用のレイアウト（admin.cssで定義） -->
-  <main class="admin-container">
+  <!-- ログイン前に表示するパスワード入力画面 -->
+  <div id="adminLoginOverlay" class="admin-login-overlay">
+    <div class="admin-login-card">
+      <h1>管理画面ログイン</h1>
+      <p class="admin-hint">管理者パスワードを入力してください。</p>
+      <input id="adminPasswordInput" type="password" placeholder="パスワード" autocomplete="current-password" />
+      <button id="adminLoginButton" type="button">ログイン</button>
+      <p id="adminLoginMessage"></p>
+    </div>
+  </div>
+
+  <!-- ログイン後に表示する本体（最初は非表示） -->
+  <main id="adminMain" class="admin-container" style="display: none;">
 
     <!-- 画面上部：タイトルと現在のイベント状態 -->
     <header class="admin-header">
@@ -40,7 +51,13 @@
             <!-- イベントを開始する -->
             <button id="startEventButton" style="display: none;">イベント開始</button>
 
-            <!-- 次の問題へ進む -->
+            <!-- 例題開始（回答練習。正解発表はしない） -->
+            <button id="startPracticeButton" style="display: none;">例題を開始</button>
+
+            <!-- 例題終了（本番前の待機に戻る） -->
+            <button id="endPracticeButton" style="display: none;">例題を終了</button>
+
+            <!-- 次の問題へ進む（本番） -->
             <button id="nextQuestionButton" style="display: none;">次の問題へ</button>
 
             <!-- 回答受付を手動で終了する -->
@@ -65,8 +82,11 @@
             <!-- 参加受付を再開する -->
             <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
 
-            <!-- イベント全体を終了する -->
+            <!-- イベント全体を終了する（結果を残す） -->
             <button id="finishEventButton" style="display: none;">イベント終了</button>
+
+            <!-- 終了後にチーム・結果を消して最初からやり直す -->
+            <button id="resetEventButton" style="display: none;">新規イベント（リセット）</button>
 
           </div>
         </div>
@@ -75,6 +95,9 @@
         <div class="card admin-question-info">
           <h2>現在の問題</h2>
 
+          <!-- 何問目か（例: 2 / 5） -->
+          <p id="questionProgressText">進捗: --</p>
+
           <!-- 現在の問題文 -->
           <p id="currentQuestionText">まだ問題は表示されていません</p>
 
@@ -82,16 +105,23 @@
           <p id="answeredCountText">回答済み: 0件</p>
 
           <!-- 残り時間 -->
-          <p id="timerText">残り時間: --秒</p>
+          <p id="timerText">残り時間: --:--</p>
 
           <!-- 正解表示 -->
           <p id="correctAnswerText">正解: --</p>
+        </div>
+
+        <!-- 問題一覧（管理用） -->
+        <div class="card">
+          <h2>問題一覧</h2>
+          <ul id="questionList"></ul>
         </div>
 
         <!-- 参加コードの設定（参加者が入力する合言葉） -->
         <div class="card">
           <h2>参加コード設定</h2>
           <p class="admin-hint">参加者はこのコードを入力しないと参加できません。</p>
+          <p class="admin-hint">新規参加は「参加受付中」のみ可能です。イベント開始後は再接続のみ受け付けます。</p>
 
           <!-- 未設定のとき／「コードを変更」押下後だけ表示する編集エリア -->
           <div id="joinCodeEditArea">
@@ -128,6 +158,12 @@
           <ul id="teamList"></ul>
         </div>
 
+        <!-- 回答状況（誰が答えたか・未回答か） -->
+        <div class="card">
+          <h2>回答状況</h2>
+          <ul id="answerStatusList"></ul>
+        </div>
+
         <!-- 回答公開後に表示する一覧 -->
         <div class="card">
           <h2>回答一覧</h2>
@@ -149,6 +185,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=5"></script>
+  <script src="/js/admin.js?v=9"></script>
 </body>
 </html>

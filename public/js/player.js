@@ -13,11 +13,17 @@ const confirmTeamButton = document.getElementById("confirmTeamButton");
 const cancelTeamButton = document.getElementById("cancelTeamButton");
 const joinMessage = document.getElementById("joinMessage");
 const joinSectionTitle = document.getElementById("joinSectionTitle");
+const surveyImage = document.getElementById("surveyImage");
+const rankingTitle = document.getElementById("rankingTitle");
 const currentQuestionText = document.getElementById("currentQuestionText");
+const questionProgress = document.getElementById("questionProgress");
+const questionBadgeNum = document.getElementById("questionBadgeNum");
+const questionHint = document.getElementById("questionHint");
 const answerArea = document.getElementById("answerArea");
 const answerInput = document.getElementById("answerInput");
 const answerSlider = document.getElementById("answerSlider");
-const sliderValue = document.getElementById("sliderValue");
+const answerDecButton = document.getElementById("answerDecButton");
+const answerIncButton = document.getElementById("answerIncButton");
 const submitAnswerButton = document.getElementById("submitAnswerButton");
 const answerMessage = document.getElementById("answerMessage");
 const joinSection = document.getElementById("joinSection");
@@ -28,7 +34,7 @@ const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
 const rankingList = document.getElementById("rankingList");
 const myRankText = document.getElementById("myRankText");
-const timerText = document.getElementById("timerText");
+const timerValue = document.getElementById("timerValue");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const scoreText = document.getElementById("scoreText");
 const gaugeContainer = document.getElementById("gaugeContainer");
@@ -53,22 +59,136 @@ let savedSeatNumber = "";
 // 直近のイベント状態（参加受付中かどうかの判定用）
 let currentEventStatus = "waiting";
 
+// 残り時間を「◯秒」形式にする（モックアップ準拠）
+function formatRemainingTime(seconds) {
+  if (typeof seconds !== "number") {
+    return "--秒";
+  }
+  return `${seconds}秒`;
+}
+
+// 回答値を 0〜100 の整数に丸める
+function clampAnswer(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return 50;
+  }
+  return Math.max(0, Math.min(100, Math.round(num)));
+}
+
+function setAnswerValue(value) {
+  const next = clampAnswer(value);
+  answerInput.value = String(next);
+  answerSlider.value = String(next);
+}
+
+function setAnswerControlsEnabled(enabled) {
+  answerInput.disabled = !enabled;
+  answerSlider.disabled = !enabled;
+  answerDecButton.disabled = !enabled;
+  answerIncButton.disabled = !enabled;
+  submitAnswerButton.disabled = !enabled;
+}
+
+function updateQuestionMeta(state) {
+  const total = state.questionCount || 0;
+
+  if (state.isPractice) {
+    questionProgress.textContent = "例題";
+    questionBadgeNum.textContent = "例題";
+    questionHint.textContent = "操作確認です。0〜100%の好きな値を選んでください";
+    return;
+  }
+
+  const current =
+    typeof state.currentQuestionIndex === "number" &&
+    state.currentQuestionIndex >= 0
+      ? state.currentQuestionIndex + 1
+      : null;
+
+  if (current !== null && total > 0) {
+    questionProgress.textContent = `第${current}問 / 全${total}問`;
+    questionBadgeNum.textContent = `${current} / ${total}`;
+  } else {
+    questionProgress.textContent = total > 0 ? `全${total}問` : "第--問 / 全--問";
+    questionBadgeNum.textContent = "-- / --";
+  }
+
+  questionHint.textContent = "0~100%の範囲で予測してください";
+}
+
+// 再接続用にブラウザへ保存するキー
+const JOIN_STORAGE_KEY = "quizJoinInfo";
+
+function saveJoinInfo(teamName, seatNumber, code) {
+  try {
+    localStorage.setItem(
+      JOIN_STORAGE_KEY,
+      JSON.stringify({ teamName, seatNumber, joinCode: code })
+    );
+  } catch (e) {
+    // localStorage が使えない環境では無視
+  }
+}
+
+function loadJoinInfo() {
+  try {
+    const raw = localStorage.getItem(JOIN_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearJoinInfo() {
+  try {
+    localStorage.removeItem(JOIN_STORAGE_KEY);
+  } catch (e) {
+    // 無視
+  }
+}
+
+// 保存済み情報で再接続を試みる
+function tryAutoReconnect() {
+  if (hasJoined) {
+    return;
+  }
+  const saved = loadJoinInfo();
+  if (!saved || !saved.teamName || !saved.seatNumber || !saved.joinCode) {
+    return;
+  }
+  joinCodeInput.value = saved.joinCode;
+  teamNameInput.value = saved.teamName;
+  seatNumberInput.value = saved.seatNumber;
+  socket.emit("joinTeam", {
+    teamName: saved.teamName,
+    seatNumber: saved.seatNumber,
+    joinCode: saved.joinCode
+  });
+}
+
 socket.on("connect", () => {
   statusEl.textContent = "参加者画面が接続されました";
+  // 回線切断後の再接続で、同じチームに自動で戻る
+  tryAutoReconnect();
 });
 
 // 参加フォームの表示を現在の状態に合わせて切り替える
 function updateJoinFormMode() {
-  const canEdit = currentEventStatus === "waiting" || currentEventStatus === "finished";
+  const canEdit = currentEventStatus === "waiting";
+  const joinClosed = currentEventStatus !== "waiting" && !hasJoined;
 
   if (!hasJoined) {
     // ===== 未参加：参加フォーム =====
-    joinSectionTitle.textContent = "チーム参加";
+    joinSectionTitle.textContent = joinClosed
+      ? "参加受付終了（再接続のみ）"
+      : "チーム参加";
     joinCodeInput.style.display = "block";
     joinCodeInput.disabled = false;
     teamNameInput.disabled = false;
     seatNumberInput.disabled = false;
     joinButton.style.display = "block";
+    joinButton.textContent = joinClosed ? "再接続" : "参加";
     editTeamButton.style.display = "none";
     teamEditActions.style.display = "none";
     return;
@@ -79,7 +199,7 @@ function updateJoinFormMode() {
   joinCodeInput.style.display = "none";
   joinButton.style.display = "none";
 
-  // イベント開始後は編集不可（入力ロック＋変更ボタン非表示）
+  // イベント開始後は編集不可
   if (!canEdit) {
     isEditingTeamInfo = false;
     teamNameInput.disabled = true;
@@ -90,13 +210,11 @@ function updateJoinFormMode() {
   }
 
   if (isEditingTeamInfo) {
-    // 編集モード：入力可能＋決定／キャンセル
     teamNameInput.disabled = false;
     seatNumberInput.disabled = false;
     editTeamButton.style.display = "none";
     teamEditActions.style.display = "flex";
   } else {
-    // ロックモード：入力不可＋「チーム情報を変更」
     teamNameInput.disabled = true;
     seatNumberInput.disabled = true;
     editTeamButton.style.display = "block";
@@ -150,6 +268,11 @@ socket.on("joinResult", (result) => {
     isEditingTeamInfo = false;
     savedTeamName = teamNameInput.value;
     savedSeatNumber = seatNumberInput.value;
+    saveJoinInfo(
+      teamNameInput.value.trim(),
+      seatNumberInput.value.trim(),
+      joinCodeInput.value.trim()
+    );
     updateJoinFormMode();
   }
 });
@@ -163,6 +286,11 @@ socket.on("updateTeamResult", (result) => {
     savedTeamName = teamNameInput.value;
     savedSeatNumber = seatNumberInput.value;
     isEditingTeamInfo = false;
+    saveJoinInfo(
+      teamNameInput.value.trim(),
+      seatNumberInput.value.trim(),
+      (loadJoinInfo() && loadJoinInfo().joinCode) || joinCodeInput.value.trim()
+    );
     updateJoinFormMode();
   }
 });
@@ -173,60 +301,75 @@ socket.on("stateUpdated", (state) => {
   if (state.currentQuestionId !== lastQuestionId) {
     lastQuestionId = state.currentQuestionId;
     answerMessage.textContent = "";
-    answerInput.value = "";
-    answerSlider.value = 50;
-    sliderValue.textContent = "50";
-    answerInput.disabled = false;
-    answerSlider.disabled = false;
-    submitAnswerButton.disabled = false;
+    setAnswerValue(50);
+    setAnswerControlsEnabled(true);
     gaugeContainer.innerHTML = "";
     myTeamResult.style.display = "none";
     myTeamResult.textContent = "";
   }
 
-  const isWaiting = state.status === "waiting" || state.status === "finished";
-  const showQuestionView = state.status === "question" || state.status === "answer_closed" || state.status === "started";
-  const showResultView = state.status === "answers_revealed" || state.status === "correct_revealed";
+  const showJoinSection =
+    state.status === "waiting" ||
+    (!hasJoined && state.status !== "finished") ||
+    (hasJoined && state.status === "waiting");
+  const showQuestionView =
+    state.status === "question" ||
+    state.status === "answer_closed" ||
+    state.status === "started";
+  const showResultView =
+    state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
-  const showRankingView = state.status === "ranking_revealed";
+  // 順位発表中、またはイベント終了時に最終順位を表示
+  const showRankingView =
+    state.status === "ranking_revealed" || state.status === "finished";
 
   currentEventStatus = state.status;
 
-  // 参加受付中のみ参加／チーム情報エリアを表示
-  // （イベント開始後は変更不可なのでこのエリアは隠す）
-  joinSection.style.display = isWaiting ? "block" : "none";
+  // 出題・回答中はタイトルを隠してモックアップ寄りの画面にする
+  document.body.classList.toggle(
+    "answering",
+    showQuestionView &&
+      (state.status === "question" || state.status === "answer_closed")
+  );
+
+  joinSection.style.display = showJoinSection ? "block" : "none";
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
 
-  // イベント終了などでチームが消えたら参加状態をリセット
-  if (isWaiting && hasJoined) {
+  // リセット後など、チームがいなくなったら参加状態をクリア
+  if (hasJoined) {
     const stillInTeams = state.teams.some((team) => team.name === myTeamName);
-    if (!stillInTeams) {
+    if (!stillInTeams && state.status === "waiting") {
       hasJoined = false;
       myTeamName = "";
       isEditingTeamInfo = false;
       joinMessage.textContent = "";
-      teamNameInput.value = "";
-      seatNumberInput.value = "";
-      joinCodeInput.value = "";
+      clearJoinInfo();
     }
   }
 
   // 参加フォームのロック／編集表示を最新状態に合わせる
   updateJoinFormMode();
 
-  // 状態ごとの表示切り替え
+  // アンケート画像を問題ごとに切り替え
+  if (state.surveyImageUrl) {
+    surveyImage.src = state.surveyImageUrl;
+  }
+
+  // 状態ごとの表示切り替え（例題は回答練習のみ。正解発表なし）
   if (state.status === "question") {
-    statusEl.textContent = "問題に回答してください";
+    statusEl.textContent = state.isPractice
+      ? "【例題】操作確認：回答してください（採点・正解発表はありません）"
+      : "問題に回答してください";
     answerArea.style.display = "block";
   } else if (state.status === "answer_closed") {
-    statusEl.textContent = "回答受付は終了しました";
+    statusEl.textContent = state.isPractice
+      ? "【例題】回答受付は終了しました。本番の開始をお待ちください"
+      : "回答受付は終了しました";
     answerArea.style.display = "block";
-    answerInput.disabled = true;
-    answerSlider.disabled = true;
-    submitAnswerButton.disabled = true;
+    setAnswerControlsEnabled(false);
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "全チームの回答を表示中";
     answerArea.style.display = "none";
@@ -243,16 +386,13 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "ranking_revealed") {
     statusEl.textContent = "順位発表中";
     answerArea.style.display = "none";
+    rankingTitle.textContent = "順位発表";
   } else if (state.status === "finished") {
-    statusEl.textContent = "参加受付中";
+    statusEl.textContent = "イベント終了";
     answerArea.style.display = "none";
-    currentQuestionText.textContent = "まだ問題は表示されていません";
-    timerText.textContent = "残り時間: --秒";
-    correctAnswerText.textContent = "正解: --";
-    gaugeContainer.innerHTML = "";
-    resultTitle.textContent = "回答公開";
+    rankingTitle.textContent = "最終順位";
   } else if (state.status === "started") {
-    statusEl.textContent = "イベント開始。出題を待っています";
+    statusEl.textContent = "イベント開始。例題または本番の出題を待っています";
     answerArea.style.display = "none";
   } else if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
@@ -264,19 +404,23 @@ socket.on("stateUpdated", (state) => {
       ? state.currentQuestion.questionText
       : "まだ問題は表示されていません";
 
-    timerText.textContent =
-      typeof state.remainingTime === "number"
-        ? `残り時間: ${state.remainingTime}秒`
-        : "残り時間: --秒";
+    timerValue.textContent = formatRemainingTime(state.remainingTime);
+    updateQuestionMeta(state);
 
-    correctAnswerText.textContent =
-      state.correctAnswer !== null ? `正解: ${state.correctAnswer}%` : "正解: --";
+    if (state.isPractice) {
+      correctAnswerText.textContent = "例題（正解発表なし）";
+    } else {
+      correctAnswerText.textContent =
+        state.correctAnswer !== null
+          ? `正解: ${state.correctAnswer}%`
+          : "正解: --";
+    }
   }
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);
   scoreText.textContent = myTeam
-    ? `現在の得点: ${myTeam.score}点`
-    : "現在の得点: --点";
+    ? `累計スコア ${myTeam.score} pt`
+    : "累計スコア -- pt";
 
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
@@ -290,7 +434,7 @@ socket.on("stateUpdated", (state) => {
 function renderRanking(state) {
   rankingList.innerHTML = "";
 
-  if (state.status !== "ranking_revealed") {
+  if (state.status !== "ranking_revealed" && state.status !== "finished") {
     myRankText.textContent = "あなたの順位: --";
     return;
   }
@@ -324,72 +468,42 @@ function renderGauge(state, myTeam) {
     return;
   }
 
-  const showCorrectPin = state.status === "correct_revealed";
-  const correctValue = state.correctAnswer !== null ? state.correctAnswer : 0;
-
-  const wrapper = document.createElement("div");
-  wrapper.className = "gauge-track-wrapper";
-
-  const track = document.createElement("div");
-  track.className = "gauge-track";
-
-  const fill = document.createElement("div");
-  fill.className = "gauge-fill";
-  fill.style.width = "100%";
-  track.appendChild(fill);
-
-  wrapper.appendChild(track);
+  const showCorrect = state.status === "correct_revealed";
+  const correctValue =
+    state.correctAnswer !== null ? clampAnswer(state.correctAnswer) : null;
 
   let myAnswer = null;
+  const teamMarkers = [];
 
   state.revealedAnswers.forEach((item) => {
     if (item.answer === null) {
       return;
     }
 
-    const percent = Math.max(0, Math.min(100, item.answer));
-    const pin = document.createElement("div");
-    pin.className = item.teamName === myTeamName ? "gauge-pin own" : "gauge-pin";
-    pin.style.left = `${percent}%`;
-    wrapper.appendChild(pin);
+    const percent = clampAnswer(item.answer);
+    const isOwn = item.teamName === myTeamName;
 
-    const label = document.createElement("div");
-    label.className = "gauge-label";
-    label.textContent = item.teamName;
-    label.style.left = `${percent}%`;
-    wrapper.appendChild(label);
-
-    if (item.teamName === myTeamName) {
-      myAnswer = item.answer;
+    if (isOwn) {
+      myAnswer = percent;
     }
+
+    teamMarkers.push({
+      teamName: item.teamName,
+      percent,
+      isOwn
+    });
   });
 
-  if (showCorrectPin) {
-    const correctPin = document.createElement("div");
-    correctPin.className = "gauge-pin correct";
-    correctPin.style.left = "0%";
+  const tacho = renderTachometer({
+    teamMarkers,
+    myAnswer,
+    correctValue: showCorrect ? correctValue : null,
+    showCorrect
+  });
 
-    const correctLabel = document.createElement("div");
-    correctLabel.className = "gauge-label";
-    correctLabel.textContent = `正解: ${correctValue}%`;
-    correctLabel.style.left = `${correctValue}%`;
+  gaugeContainer.appendChild(tacho.root);
 
-    wrapper.appendChild(correctPin);
-    wrapper.appendChild(correctLabel);
-
-    requestAnimationFrame(() => {
-      correctPin.style.left = `${correctValue}%`;
-    });
-  }
-
-  gaugeContainer.appendChild(wrapper);
-
-  const scale = document.createElement("div");
-  scale.className = "gauge-scale";
-  scale.innerHTML = '<span>0%</span><span>50%</span><span>100%</span>';
-  gaugeContainer.appendChild(scale);
-
-  const showMyTeamResult = myTeam && state.status === "correct_revealed";
+  const showMyTeamResult = myTeam && showCorrect;
   if (showMyTeamResult) {
     const answerText = myAnswer !== null ? `${myAnswer}%` : "未回答";
     let scoreDeltaText = "";
@@ -403,29 +517,262 @@ function renderGauge(state, myTeam) {
       scoreDeltaText = `（この問題の得点: ${delta >= 0 ? "+" + delta : delta}点）`;
     }
 
-    myTeamResult.textContent = `自チーム: ${myTeam.name} / 回答: ${answerText} ${scoreDeltaText}`;
+    myTeamResult.textContent = `${myTeam.name} / 回答: ${answerText} ${scoreDeltaText}`;
     myTeamResult.style.display = "block";
   }
 }
 
-answerSlider.addEventListener("input", () => {
-    const value = answerSlider.value;
-    sliderValue.textContent = value;
-    answerInput.value = value;
+const TACHO = {
+  cx: 150,
+  cy: 150,
+  radius: 108,
+  needleLen: 92
+};
+
+function percentToRad(percent) {
+  return Math.PI * (1 - percent / 100);
+}
+
+function tachoPoint(percent, radius = TACHO.radius) {
+  const rad = percentToRad(percent);
+  return {
+    x: TACHO.cx + radius * Math.cos(rad),
+    y: TACHO.cy - radius * Math.sin(rad)
+  };
+}
+
+function valueToRotateDeg(value) {
+  return value * 1.8 - 90;
+}
+
+function createSvgEl(tag, attrs = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.entries(attrs).forEach(([key, val]) => {
+    el.setAttribute(key, String(val));
+  });
+  return el;
+}
+
+function renderTachometer({ teamMarkers, myAnswer, correctValue, showCorrect }) {
+  const root = document.createElement("div");
+  root.className = "tacho-gauge";
+
+  const svg = createSvgEl("svg", {
+    viewBox: "0 0 300 180",
+    class: "tacho-svg",
+    role: "img",
+    "aria-label": "回答タコメーター"
   });
 
-  answerInput.addEventListener("input", () => {
-    const value = answerInput.value;
-    if (value === "") {
+  const defs = createSvgEl("defs");
+  const gradient = createSvgEl("linearGradient", {
+    id: "tachoArcGradient",
+    x1: "0%",
+    y1: "0%",
+    x2: "100%",
+    y2: "0%"
+  });
+  gradient.appendChild(
+    createSvgEl("stop", { offset: "0%", "stop-color": "#93c5fd" })
+  );
+  gradient.appendChild(
+    createSvgEl("stop", { offset: "100%", "stop-color": "#2563eb" })
+  );
+  defs.appendChild(gradient);
+  svg.appendChild(defs);
+
+  const arcStart = tachoPoint(0, TACHO.radius);
+  const arcEnd = tachoPoint(100, TACHO.radius);
+
+  svg.appendChild(
+    createSvgEl("path", {
+      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
+      class: "tacho-arc-bg"
+    })
+  );
+
+  svg.appendChild(
+    createSvgEl("path", {
+      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
+      class: "tacho-arc-fill"
+    })
+  );
+
+  [0, 25, 50, 75, 100].forEach((tick) => {
+    const outer = tachoPoint(tick, TACHO.radius);
+    const inner = tachoPoint(tick, TACHO.radius - (tick % 50 === 0 ? 14 : 8));
+    svg.appendChild(
+      createSvgEl("line", {
+        x1: inner.x,
+        y1: inner.y,
+        x2: outer.x,
+        y2: outer.y,
+        class: tick % 50 === 0 ? "tacho-tick-major" : "tacho-tick-minor"
+      })
+    );
+
+    if (tick % 50 === 0) {
+      const labelPoint = tachoPoint(tick, TACHO.radius - 24);
+      const label = createSvgEl("text", {
+        x: labelPoint.x,
+        y: labelPoint.y,
+        class: "tacho-scale-label",
+        "text-anchor": "middle",
+        "dominant-baseline": "middle"
+      });
+      label.textContent = `${tick}`;
+      svg.appendChild(label);
+    }
+  });
+
+  teamMarkers.forEach((marker) => {
+    if (marker.isOwn) {
       return;
     }
-    answerSlider.value = value;
-    sliderValue.textContent = value;
+
+    const point = tachoPoint(marker.percent, TACHO.radius - 2);
+    svg.appendChild(
+      createSvgEl("circle", {
+        cx: point.x,
+        cy: point.y,
+        r: 5,
+        class: "tacho-team-dot"
+      })
+    );
   });
 
-  // 回答送信
+  if (myAnswer !== null) {
+    const ownNeedle = createNeedleGroup("tacho-needle tacho-needle-own", myAnswer);
+    svg.appendChild(ownNeedle);
+  }
+
+  if (showCorrect && correctValue !== null) {
+    const correctNeedle = createNeedleGroup(
+      "tacho-needle tacho-needle-correct",
+      correctValue
+    );
+    svg.appendChild(correctNeedle);
+  }
+
+  svg.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy,
+      r: 10,
+      class: "tacho-hub"
+    })
+  );
+
+  svg.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy,
+      r: 4,
+      class: "tacho-hub-center"
+    })
+  );
+
+  root.appendChild(svg);
+
+  const centerValue = document.createElement("div");
+  centerValue.className = "tacho-center-value";
+  if (showCorrect && correctValue !== null) {
+    centerValue.innerHTML = `<span class="tacho-center-label">正解</span><span class="tacho-center-num">${correctValue}<small>%</small></span>`;
+  } else if (myAnswer !== null) {
+    centerValue.innerHTML = `<span class="tacho-center-label">あなた</span><span class="tacho-center-num">${myAnswer}<small>%</small></span>`;
+  } else {
+    centerValue.innerHTML = `<span class="tacho-center-label">回答</span><span class="tacho-center-num">--<small>%</small></span>`;
+  }
+  root.appendChild(centerValue);
+
+  const legend = document.createElement("ul");
+  legend.className = "tacho-legend";
+
+  teamMarkers
+    .slice()
+    .sort((a, b) => a.percent - b.percent)
+    .forEach((marker) => {
+      const li = document.createElement("li");
+      li.className = marker.isOwn ? "tacho-legend-own" : "tacho-legend-item";
+      li.innerHTML = `<span class="tacho-legend-name">${marker.teamName}${marker.isOwn ? "（あなた）" : ""}</span><span class="tacho-legend-value">${marker.percent}%</span>`;
+      legend.appendChild(li);
+    });
+
+  if (showCorrect && correctValue !== null) {
+    const li = document.createElement("li");
+    li.className = "tacho-legend-correct";
+    li.innerHTML = `<span class="tacho-legend-name">正解</span><span class="tacho-legend-value">${correctValue}%</span>`;
+    legend.appendChild(li);
+  }
+
+  root.appendChild(legend);
+
+  requestAnimationFrame(() => {
+    root.querySelectorAll(".tacho-needle").forEach((needle) => {
+      const target = Number(needle.dataset.target);
+      needle.style.transform = `rotate(${valueToRotateDeg(target)}deg)`;
+    });
+  });
+
+  return { root };
+}
+
+function createNeedleGroup(className, value) {
+  const group = createSvgEl("g", {
+    class: `${className} tacho-needle`
+  });
+  group.dataset.target = String(value);
+
+  group.appendChild(
+    createSvgEl("line", {
+      x1: TACHO.cx,
+      y1: TACHO.cy,
+      x2: TACHO.cx,
+      y2: TACHO.cy - TACHO.needleLen,
+      class: "tacho-needle-line"
+    })
+  );
+
+  group.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy - TACHO.needleLen + 6,
+      r: 4,
+      class: "tacho-needle-tip"
+    })
+  );
+
+  return group;
+}
+
+answerDecButton.addEventListener("click", () => {
+  setAnswerValue(clampAnswer(answerInput.value) - 1);
+});
+
+answerIncButton.addEventListener("click", () => {
+  setAnswerValue(clampAnswer(answerInput.value) + 1);
+});
+
+answerSlider.addEventListener("input", () => {
+  setAnswerValue(answerSlider.value);
+});
+
+answerInput.addEventListener("change", () => {
+  setAnswerValue(answerInput.value);
+});
+
+answerInput.addEventListener("blur", () => {
+  if (answerInput.value === "") {
+    setAnswerValue(50);
+    return;
+  }
+  setAnswerValue(answerInput.value);
+});
+
+// 回答送信
 submitAnswerButton.addEventListener("click", () => {
-  const answer = Number(answerInput.value);
+  const answer = clampAnswer(answerInput.value);
+  setAnswerValue(answer);
   socket.emit("submitAnswer", answer);
 });
 
@@ -434,7 +781,6 @@ socket.on("answerResult", (result) => {
   answerMessage.textContent = result.message;
 
   if (result.success) {
-    answerInput.disabled = true;
-    submitAnswerButton.disabled = true;
+    setAnswerControlsEnabled(false);
   }
 });

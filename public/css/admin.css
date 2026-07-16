@@ -4,6 +4,55 @@
   PC横長画面を想定したレイアウト
 */
 
+/* 管理画面ログインオーバーレイ */
+.admin-login-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+  z-index: 1000;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.admin-login-card {
+  width: min(100%, 400px);
+  background: white;
+  border-radius: 12px;
+  padding: 28px 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.admin-login-card h1 {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+}
+
+.admin-login-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.admin-login-card button {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin: 8px 0 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#adminLoginMessage {
+  margin: 12px 0 0;
+  color: #dc2626;
+  font-size: 14px;
+}
+
 /* ページ全体の基本設定 */
 body {
   margin: 0;
@@ -198,4 +247,24 @@ body {
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   color: #334155;
+}
+
+/* 問題一覧の現在の問題 */
+.question-item-current {
+  background: #dbeafe !important;
+  border-left: 4px solid #2563eb;
+  font-weight: bold;
+}
+
+/* 回答状況 */
+.answer-status-done {
+  border-left: 4px solid #16a34a;
+}
+
+.answer-status-pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.team-offline {
+  color: #94a3b8;
 }
