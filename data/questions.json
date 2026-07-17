@@ -15,6 +15,54 @@
       "questionText": "社内アンケートで『リモートワークを週3日以上希望する』と答えた人の割合は？",
       "correctAnswer": 54,
       "surveyImage": "/data/survey/2.svg"
+    },
+    {
+      "id": 3,
+      "questionText": "社内アンケートで『通勤時間は片道30分以内』と答えた人の割合は？",
+      "correctAnswer": 41,
+      "surveyImage": "/data/survey/3.svg"
+    },
+    {
+      "id": 4,
+      "questionText": "社内アンケートで『週に1回以上、社内の人とランチをする』と答えた人の割合は？",
+      "correctAnswer": 37,
+      "surveyImage": "/data/survey/4.svg"
+    },
+    {
+      "id": 5,
+      "questionText": "社内アンケートで『コーヒーや紅茶を1日2杯以上飲む』と答えた人の割合は？",
+      "correctAnswer": 73,
+      "surveyImage": "/data/survey/5.svg"
+    },
+    {
+      "id": 6,
+      "questionText": "社内アンケートで『休日は家で過ごすことが多い』と答えた人の割合は？",
+      "correctAnswer": 62,
+      "surveyImage": "/data/survey/6.svg"
+    },
+    {
+      "id": 7,
+      "questionText": "社内アンケートで『朝型より夜型だ』と答えた人の割合は？",
+      "correctAnswer": 58,
+      "surveyImage": "/data/survey/7.svg"
+    },
+    {
+      "id": 8,
+      "questionText": "社内アンケートで『デスクに観葉植物や小物を置いている』と答えた人の割合は？",
+      "correctAnswer": 29,
+      "surveyImage": "/data/survey/8.svg"
+    },
+    {
+      "id": 9,
+      "questionText": "社内アンケートで『社内イベントには積極的に参加したい』と答えた人の割合は？",
+      "correctAnswer": 46,
+      "surveyImage": "/data/survey/9.svg"
+    },
+    {
+      "id": 10,
+      "questionText": "社内アンケートで『仕事終わりに勉強や趣味の時間を取っている』と答えた人の割合は？",
+      "correctAnswer": 51,
+      "surveyImage": "/data/survey/10.svg"
     }
   ]
 }

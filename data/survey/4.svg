@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#f8fafc"/>
+  <text x="400" y="48" text-anchor="middle" font-size="26" font-family="Arial, sans-serif" fill="#1f2937">アンケート結果（仮）</text>
+  <text x="400" y="82" text-anchor="middle" font-size="18" font-family="Arial, sans-serif" fill="#475569">週1回以上社内ランチ</text>
+  <line x1="120" y1="400" x2="680" y2="400" stroke="#334155" stroke-width="3"/>
+  <line x1="120" y1="400" x2="120" y2="110" stroke="#334155" stroke-width="3"/>
+  <rect x="230" y="304" width="110" height="96" fill="#f472b6" rx="8"/>
+  <rect x="460" y="236" width="110" height="164" fill="#94a3b8" rx="8"/>
+  <text x="285" y="292" text-anchor="middle" font-size="22" font-weight="bold" font-family="Arial, sans-serif" fill="#0f172a">37%</text>
+  <text x="515" y="224" text-anchor="middle" font-size="22" font-weight="bold" font-family="Arial, sans-serif" fill="#0f172a">63%</text>
+  <text x="285" y="432" text-anchor="middle" font-size="18" font-family="Arial, sans-serif" fill="#334155">する</text>
+  <text x="515" y="432" text-anchor="middle" font-size="18" font-family="Arial, sans-serif" fill="#334155">しない</text>
+  <text x="400" y="475" text-anchor="middle" font-size="14" font-family="Arial, sans-serif" fill="#94a3b8">Q4 / 仮データ</text>
+</svg>
