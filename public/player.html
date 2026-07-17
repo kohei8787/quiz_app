@@ -122,12 +122,18 @@
       <h2 id="rankingTitle">順位発表</h2>
       <p id="myRankText">あなたの順位: --</p>
       <ul id="rankingList"></ul>
+
+      <!-- イベント終了時のみ：出題済み問題と自チームの回答 -->
+      <section id="questionReviewSection" class="question-review" style="display: none;">
+        <h3 class="question-review-title">出題された問題</h3>
+        <ul id="questionReviewList"></ul>
+      </section>
     </div>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=12"></script>
+  <script src="/js/player.js?v=13"></script>
 </body>
 </html>

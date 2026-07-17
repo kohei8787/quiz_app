@@ -34,6 +34,8 @@ const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
 const rankingList = document.getElementById("rankingList");
 const myRankText = document.getElementById("myRankText");
+const questionReviewSection = document.getElementById("questionReviewSection");
+const questionReviewList = document.getElementById("questionReviewList");
 const timerValue = document.getElementById("timerValue");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const scoreText = document.getElementById("scoreText");
@@ -429,6 +431,7 @@ socket.on("stateUpdated", (state) => {
 
   // 順位発表画面の描画
   renderRanking(state);
+  renderQuestionReview(state);
 });
 
 function renderRanking(state) {
@@ -457,6 +460,51 @@ function renderRanking(state) {
 
   myRankText.textContent =
     myRank !== null ? `あなたの順位: ${myRank}位` : "あなたの順位: --";
+}
+
+// イベント終了時：出題済み問題と自チームの回答を表示（未出題は含めない）
+function renderQuestionReview(state) {
+  questionReviewList.innerHTML = "";
+
+  if (state.status !== "finished") {
+    questionReviewSection.style.display = "none";
+    return;
+  }
+
+  const history = Array.isArray(state.answerHistory) ? state.answerHistory : [];
+  if (history.length === 0) {
+    questionReviewSection.style.display = "none";
+    return;
+  }
+
+  history.forEach((entry, index) => {
+    const teamAnswer = (entry.teamAnswers || []).find(
+      (item) => item.teamName === myTeamName
+    );
+    const answerText =
+      teamAnswer && teamAnswer.answer !== null && teamAnswer.answer !== undefined
+        ? `${teamAnswer.answer}%`
+        : "未回答";
+    const correctText =
+      entry.correctAnswer !== null && entry.correctAnswer !== undefined
+        ? `${entry.correctAnswer}%`
+        : "--";
+
+    const li = document.createElement("li");
+    li.className = "question-review-item";
+    li.innerHTML = `
+      <p class="question-review-num">問題 ${index + 1}</p>
+      <p class="question-review-text"></p>
+      <p class="question-review-meta">あなたの回答: <strong></strong></p>
+      <p class="question-review-meta">正解: <strong></strong></p>
+    `;
+    li.querySelector(".question-review-text").textContent = entry.questionText || "";
+    li.querySelectorAll(".question-review-meta strong")[0].textContent = answerText;
+    li.querySelectorAll(".question-review-meta strong")[1].textContent = correctText;
+    questionReviewList.appendChild(li);
+  });
+
+  questionReviewSection.style.display = "block";
 }
 
 function renderGauge(state, myTeam) {

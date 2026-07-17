@@ -89,7 +89,9 @@ const eventState = {
   correctAnswer: null, // 公開された正解
   ranking: [], // 現在の順位表
   questionCount: questions.length, // 全問題数
-  hasMoreQuestions: false // まだ次の問題があるか
+  hasMoreQuestions: false, // まだ次の問題があるか
+  // 出題済み問題の回答履歴（未出題は含めない。公開は finished 時のみ）
+  answerHistory: []
 };
 
 // 座席番号を除いたチーム情報を作る（参加者・スクリーン向け）
@@ -136,7 +138,10 @@ function getPublicState() {
   return {
     ...eventState,
     teams: eventState.teams.map(toPublicTeam),
-    ranking: eventState.ranking.map(toPublicTeam)
+    ranking: eventState.ranking.map(toPublicTeam),
+    // 進行中に正解が漏れないよう、レビュー用履歴は終了後のみ公開
+    answerHistory:
+      eventState.status === "finished" ? eventState.answerHistory : []
   };
 }
 
@@ -200,6 +205,7 @@ function resetEventState() {
   eventState.correctAnswer = null;
   eventState.ranking = [];
   eventState.hasMoreQuestions = false;
+  eventState.answerHistory = [];
 }
 
 // 参加受付状態へ戻す（チームは残す）
@@ -219,6 +225,7 @@ function reopenJoinPhase() {
   eventState.correctAnswer = null;
   eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
   eventState.hasMoreQuestions = false;
+  eventState.answerHistory = [];
 }
 
 // 例題を終了して「開始済み」に戻す（本番問題はまだ出していない）
@@ -237,9 +244,44 @@ function endPracticePhase() {
   // hasQuestionStarted は false のまま（例題では本番開始扱いにしない）
 }
 
+// 現在の本番問題を回答履歴へ記録する（未出題・例題・二重記録はスキップ）
+function recordCurrentQuestionToHistory() {
+  if (eventState.isPractice) {
+    return;
+  }
+  if (eventState.currentQuestionIndex < 0 || !eventState.currentQuestion) {
+    return;
+  }
+
+  const alreadyRecorded = eventState.answerHistory.some(
+    (entry) => entry.questionIndex === eventState.currentQuestionIndex
+  );
+  if (alreadyRecorded) {
+    return;
+  }
+
+  const question = questions[eventState.currentQuestionIndex];
+
+  eventState.answerHistory.push({
+    questionIndex: eventState.currentQuestionIndex,
+    questionId: eventState.currentQuestionId,
+    questionText: eventState.currentQuestion.questionText,
+    correctAnswer: question ? question.correctAnswer : null,
+    teamAnswers: eventState.teams.map((team) => ({
+      teamName: team.name,
+      answer:
+        eventState.answers[team.id] !== undefined
+          ? eventState.answers[team.id]
+          : null
+    }))
+  });
+}
+
 // 最終結果を残して終了状態にする
 function finishEventKeepResults() {
   stopTimer();
+  // 途中終了でも「出題済みの現在問題」はレビュー対象に含める
+  recordCurrentQuestionToHistory();
   eventState.status = "finished";
   eventState.remainingTime = null;
   eventState.surveyImageUrl = null;
@@ -424,7 +466,8 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (enteredCode !== joinCode) {
+    // 大文字小文字は区別しない
+    if (enteredCode.toLowerCase() !== joinCode.toLowerCase()) {
       socket.emit("joinResult", {
         success: false,
         message: "参加コードが正しくありません"
@@ -661,6 +704,9 @@ io.on("connection", (socket) => {
     if (nextIndex >= questions.length) {
       return;
     }
+
+    // 次問へ進む前に、いまの出題済み問題を履歴へ残す
+    recordCurrentQuestionToHistory();
 
     const question = questions[nextIndex];
 
