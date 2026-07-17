@@ -19,6 +19,7 @@ const revealCorrectAnswerButton = document.getElementById("revealCorrectAnswerBu
 const showSurveyResultsButton = document.getElementById("showSurveyResultsButton");
 const showRankingButton = document.getElementById("showRankingButton");
 const showResultsButton = document.getElementById("showResultsButton");
+const revealNextResultButton = document.getElementById("revealNextResultButton");
 const reopenJoinPhaseButton = document.getElementById("reopenJoinPhaseButton");
 const finishEventButton = document.getElementById("finishEventButton");
 const resetEventButton = document.getElementById("resetEventButton");
@@ -205,6 +206,9 @@ function updateActionButtons(state) {
     (state.status === "correct_revealed" ||
       state.status === "survey_results" ||
       state.status === "ranking_revealed");
+  const nextResultPlace = getNextResultPlace(state);
+  const showRevealNextResult =
+    state.status === "results_announced" && nextResultPlace !== null;
   const showExtendTime = state.status === "question";
   const showReopenJoin =
     state.status === "started" && !state.hasQuestionStarted && !inPractice;
@@ -222,11 +226,25 @@ function updateActionButtons(state) {
   showSurveyResultsButton.style.display = showSurveyResults ? "inline-block" : "none";
   showRankingButton.style.display = showRanking ? "inline-block" : "none";
   showResultsButton.style.display = showResults ? "inline-block" : "none";
+  revealNextResultButton.style.display = showRevealNextResult
+    ? "inline-block"
+    : "none";
+  if (nextResultPlace !== null) {
+    revealNextResultButton.textContent = `${nextResultPlace}位を発表`;
+  }
   extendTimeInput.style.display = showExtendTime ? "inline-block" : "none";
   extendTimeButton.style.display = showExtendTime ? "inline-block" : "none";
   reopenJoinPhaseButton.style.display = showReopenJoin ? "inline-block" : "none";
   finishEventButton.style.display = showFinish ? "inline-block" : "none";
   resetEventButton.style.display = showReset ? "inline-block" : "none";
+}
+
+// 結果発表で次に公開する順位（3→2→1）。すべて公開済みなら null
+function getNextResultPlace(state) {
+  const topCount = Math.min(3, (state.ranking || []).length);
+  const revealOrder = [3, 2, 1].filter((place) => place <= topCount);
+  const step = state.resultsRevealStep || 0;
+  return revealOrder[step] || null;
 }
 
 socket.on("stateUpdated", (state) => {
@@ -249,7 +267,12 @@ socket.on("stateUpdated", (state) => {
   if (state.status === "correct_revealed") statusEl.textContent = "正解発表中";
   if (state.status === "survey_results") statusEl.textContent = "アンケート結果公開";
   if (state.status === "ranking_revealed") statusEl.textContent = "順位発表中";
-  if (state.status === "results_announced") statusEl.textContent = "結果発表中";
+  if (state.status === "results_announced") {
+    const nextPlace = getNextResultPlace(state);
+    statusEl.textContent = nextPlace
+      ? `結果発表中（次: ${nextPlace}位）`
+      : "結果発表中（上位の発表完了）";
+  }
   if (state.status === "finished") statusEl.textContent = "イベント終了";
 
   updateActionButtons(state);
@@ -384,6 +407,10 @@ nextQuestionButton.addEventListener("click", () => {
 });
 
 closeAnswersButton.addEventListener("click", () => {
+  const ok = window.confirm("回答受付を終了しますか？");
+  if (!ok) {
+    return;
+  }
   socket.emit("closeAnswers");
 });
 
@@ -400,11 +427,19 @@ showSurveyResultsButton.addEventListener("click", () => {
 });
 
 showRankingButton.addEventListener("click", () => {
+  const ok = window.confirm("現在の順位を表示しますか？");
+  if (!ok) {
+    return;
+  }
   socket.emit("showRanking");
 });
 
 showResultsButton.addEventListener("click", () => {
   socket.emit("showResults");
+});
+
+revealNextResultButton.addEventListener("click", () => {
+  socket.emit("revealNextResult");
 });
 
 extendTimeButton.addEventListener("click", () => {

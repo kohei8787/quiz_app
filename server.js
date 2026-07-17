@@ -91,7 +91,9 @@ const eventState = {
   questionCount: questions.length, // 全問題数
   hasMoreQuestions: false, // まだ次の問題があるか
   // 出題済み問題の回答履歴（未出題は含めない。公開は finished 時のみ）
-  answerHistory: []
+  answerHistory: [],
+  // 結果発表で公開済みの段階（0=未発表, 1=まず最下位側…最大3）
+  resultsRevealStep: 0
 };
 
 // 座席番号を除いたチーム情報を作る（参加者・スクリーン向け）
@@ -206,6 +208,7 @@ function resetEventState() {
   eventState.ranking = [];
   eventState.hasMoreQuestions = false;
   eventState.answerHistory = [];
+  eventState.resultsRevealStep = 0;
 }
 
 // 参加受付状態へ戻す（チームは残す）
@@ -226,6 +229,7 @@ function reopenJoinPhase() {
   eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
   eventState.hasMoreQuestions = false;
   eventState.answerHistory = [];
+  eventState.resultsRevealStep = 0;
 }
 
 // 例題を終了して「開始済み」に戻す（本番問題はまだ出していない）
@@ -907,7 +911,26 @@ io.on("connection", (socket) => {
 
     eventState.surveyImageUrl = null;
     eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
+    eventState.resultsRevealStep = 0;
     eventState.status = "results_announced";
+    broadcastState();
+  });
+
+  // 結果発表：次の順位（3位→2位→1位）を1つ公開する
+  socket.on("revealNextResult", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
+    if (eventState.status !== "results_announced") {
+      return;
+    }
+
+    const maxStep = Math.min(3, eventState.ranking.length);
+    if (eventState.resultsRevealStep >= maxStep) {
+      return;
+    }
+
+    eventState.resultsRevealStep += 1;
     broadcastState();
   });
 

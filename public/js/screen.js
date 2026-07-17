@@ -23,8 +23,8 @@ const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
 
-// 結果発表アニメーションの再実行判定用
-let lastResultsStatus = null;
+// 結果発表の公開段階（管理者が操作）
+let lastResultsRevealStep = -1;
 
 // 残り時間を mm:ss 形式の文字列にする
 function formatRemainingTime(seconds) {
@@ -164,18 +164,19 @@ function renderRanking(listEl, state, shouldShow) {
 function renderPodium(state, shouldShow) {
   if (!shouldShow) {
     podium.innerHTML = "";
-    lastResultsStatus = null;
-    return;
-  }
-
-  const shouldReplay = lastResultsStatus !== "results_announced";
-  lastResultsStatus = "results_announced";
-
-  if (!shouldReplay && podium.childElementCount > 0) {
+    lastResultsRevealStep = -1;
     return;
   }
 
   const topTeams = (state.ranking || []).slice(0, 3);
+  const step = state.resultsRevealStep || 0;
+  const revealOrder = [3, 2, 1].filter((place) => place <= topTeams.length);
+  const revealedPlaces = new Set(revealOrder.slice(0, step));
+  const previouslyRevealed = new Set(
+    revealOrder.slice(0, Math.max(0, lastResultsRevealStep))
+  );
+  lastResultsRevealStep = step;
+
   podium.innerHTML = "";
 
   if (topTeams.length === 0) {
@@ -186,6 +187,14 @@ function renderPodium(state, shouldShow) {
     return;
   }
 
+  if (step === 0) {
+    const waiting = document.createElement("p");
+    waiting.className = "podium-empty";
+    waiting.textContent = "上位表彰の発表をお待ちください";
+    podium.appendChild(waiting);
+    return;
+  }
+
   const displayOrder = [1, 0, 2].filter((index) => index < topTeams.length);
 
   displayOrder.forEach((rankIndex) => {
@@ -193,6 +202,20 @@ function renderPodium(state, shouldShow) {
     const place = rankIndex + 1;
     const item = document.createElement("div");
     item.className = `podium-place podium-place--${place}`;
+
+    if (!revealedPlaces.has(place)) {
+      item.classList.add("podium-place--hidden");
+      item.innerHTML = `
+        <p class="podium-name">？</p>
+        <p class="podium-score">--</p>
+        <div class="podium-block">
+          <span class="podium-rank">${place}</span>
+        </div>
+      `;
+      podium.appendChild(item);
+      return;
+    }
+
     item.innerHTML = `
       <p class="podium-name"></p>
       <p class="podium-score"></p>
@@ -202,12 +225,19 @@ function renderPodium(state, shouldShow) {
     `;
     item.querySelector(".podium-name").textContent = team.name;
     item.querySelector(".podium-score").textContent = `${team.score} pt`;
+
+    if (previouslyRevealed.has(place)) {
+      item.classList.add("is-visible");
+    }
+
     podium.appendChild(item);
   });
 
   requestAnimationFrame(() => {
-    podium.querySelectorAll(".podium-place").forEach((el) => {
-      el.classList.add("is-visible");
+    podium.querySelectorAll(".podium-place:not(.podium-place--hidden)").forEach((el) => {
+      if (!el.classList.contains("is-visible")) {
+        el.classList.add("is-visible");
+      }
     });
   });
 }

@@ -47,8 +47,8 @@ const resultTitle = document.getElementById("resultTitle");
 // 問題切り替え判定用
 let lastQuestionId = null;
 
-// 結果発表アニメーションの再実行判定用
-let lastResultsStatus = null;
+// 結果発表アニメーションの再実行判定用（公開済み段階）
+let lastResultsRevealStep = -1;
 
 // 自チーム名を保持してスコア表示に使う
 let myTeamName = "";
@@ -524,22 +524,23 @@ function renderQuestionReview(state) {
   questionReviewSection.style.display = "block";
 }
 
-// 結果発表：1〜3位を 3位→2位→1位 の順でアニメーション表示
+// 結果発表：管理者が 3位→2位→1位 の順で公開するたびに表示
 function renderPodium(state, shouldShow) {
   if (!shouldShow) {
     podium.innerHTML = "";
-    lastResultsStatus = null;
-    return;
-  }
-
-  const shouldReplay = lastResultsStatus !== "results_announced";
-  lastResultsStatus = "results_announced";
-
-  if (!shouldReplay && podium.childElementCount > 0) {
+    lastResultsRevealStep = -1;
     return;
   }
 
   const topTeams = (state.ranking || []).slice(0, 3);
+  const step = state.resultsRevealStep || 0;
+  const revealOrder = [3, 2, 1].filter((place) => place <= topTeams.length);
+  const revealedPlaces = new Set(revealOrder.slice(0, step));
+  const previouslyRevealed = new Set(
+    revealOrder.slice(0, Math.max(0, lastResultsRevealStep))
+  );
+  lastResultsRevealStep = step;
+
   podium.innerHTML = "";
 
   if (topTeams.length === 0) {
@@ -550,7 +551,15 @@ function renderPodium(state, shouldShow) {
     return;
   }
 
-  // 見た目の並び: 2位 | 1位 | 3位
+  if (step === 0) {
+    const waiting = document.createElement("p");
+    waiting.className = "podium-empty";
+    waiting.textContent = "上位表彰の発表をお待ちください";
+    podium.appendChild(waiting);
+    return;
+  }
+
+  // 見た目の並び: 2位 | 1位 | 3位（未公開の枠はプレースホルダ）
   const displayOrder = [1, 0, 2].filter((index) => index < topTeams.length);
 
   displayOrder.forEach((rankIndex) => {
@@ -558,6 +567,20 @@ function renderPodium(state, shouldShow) {
     const place = rankIndex + 1;
     const item = document.createElement("div");
     item.className = `podium-place podium-place--${place}`;
+
+    if (!revealedPlaces.has(place)) {
+      item.classList.add("podium-place--hidden");
+      item.innerHTML = `
+        <p class="podium-name">？</p>
+        <p class="podium-score">--</p>
+        <div class="podium-block">
+          <span class="podium-rank">${place}</span>
+        </div>
+      `;
+      podium.appendChild(item);
+      return;
+    }
+
     item.innerHTML = `
       <p class="podium-name"></p>
       <p class="podium-score"></p>
@@ -572,13 +595,19 @@ function renderPodium(state, shouldShow) {
       item.classList.add("podium-place--own");
     }
 
+    if (previouslyRevealed.has(place)) {
+      item.classList.add("is-visible");
+    }
+
     podium.appendChild(item);
   });
 
-  // 再入場時にアニメを確実に再生する
+  // 今回新しく公開された順位だけアニメーション
   requestAnimationFrame(() => {
-    podium.querySelectorAll(".podium-place").forEach((el) => {
-      el.classList.add("is-visible");
+    podium.querySelectorAll(".podium-place:not(.podium-place--hidden)").forEach((el) => {
+      if (!el.classList.contains("is-visible")) {
+        el.classList.add("is-visible");
+      }
     });
   });
 }

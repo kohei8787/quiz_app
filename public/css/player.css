@@ -801,16 +801,19 @@ input:disabled {
   animation: podiumRise 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.podium-place--3.is-visible {
-  animation-delay: 0.15s;
+.podium-place--hidden {
+  opacity: 0.35;
+  transform: none;
 }
 
-.podium-place--2.is-visible {
-  animation-delay: 0.85s;
+.podium-place--hidden .podium-name,
+.podium-place--hidden .podium-score {
+  color: #94a3b8;
 }
 
-.podium-place--1.is-visible {
-  animation-delay: 1.55s;
+.podium-place--hidden .podium-block {
+  filter: grayscale(0.4);
+  opacity: 0.7;
 }
 
 .podium-name {

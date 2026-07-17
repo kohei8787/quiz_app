@@ -82,6 +82,9 @@
             <!-- 結果発表（1〜3位セレモニー。正解発表／アンケート／順位発表から） -->
             <button id="showResultsButton" style="display: none;">結果発表</button>
 
+            <!-- 結果発表中：3位→2位→1位を手動で公開 -->
+            <button id="revealNextResultButton" style="display: none;">3位を発表</button>
+
             <!-- 参加受付を再開する -->
             <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
 
@@ -188,6 +191,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=10"></script>
+  <script src="/js/admin.js?v=12"></script>
 </body>
 </html>
