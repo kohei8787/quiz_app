@@ -74,7 +74,7 @@ function isAdminSocket(socket) {
 
 // イベント全体の状態をまとめて管理する
 const eventState = {
-  status: "waiting", // waiting / started / question / answer_closed / answers_revealed / correct_revealed / survey_results / ranking_revealed / finished
+  status: "waiting", // waiting / started / question / answer_closed / answers_revealed / correct_revealed / survey_results / ranking_revealed / results_announced / finished
   teams: [], // 参加チーム一覧（各チーム: id, name, seatNumber, score, online）
   hasQuestionStarted: false, // 1度でも本番問題を出したか
   isPractice: false, // 例題中か（正解発表・得点計算はしない）
@@ -874,7 +874,7 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  // 順位発表
+  // 順位発表（問題ごとの順位一覧）
   socket.on("showRanking", () => {
     if (!isAdminSocket(socket)) {
       return;
@@ -883,7 +883,31 @@ io.on("connection", (socket) => {
       return;
     }
 
+    eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
     eventState.status = "ranking_revealed";
+    broadcastState();
+  });
+
+  // 結果発表（1〜3位のセレモニー。正解発表／アンケート／順位発表から遷移可）
+  socket.on("showResults", () => {
+    if (!isAdminSocket(socket)) {
+      return;
+    }
+    if (eventState.isPractice) {
+      return;
+    }
+    const allowed = [
+      "correct_revealed",
+      "survey_results",
+      "ranking_revealed"
+    ];
+    if (!allowed.includes(eventState.status)) {
+      return;
+    }
+
+    eventState.surveyImageUrl = null;
+    eventState.ranking = [...eventState.teams].sort((a, b) => b.score - a.score);
+    eventState.status = "results_announced";
     broadcastState();
   });
 

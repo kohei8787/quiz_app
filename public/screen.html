@@ -55,6 +55,13 @@
       <ul id="rankingList"></ul>
     </div>
 
+    <!-- 結果発表（1〜3位セレモニー） -->
+    <div id="resultsView" class="card results-view" style="display: none;">
+      <h2>結果発表</h2>
+      <p class="results-subtitle">上位表彰</p>
+      <div id="podium" class="podium" aria-live="polite"></div>
+    </div>
+
     <!-- イベント終了時のお礼画面 -->
     <div id="finishedView" class="card finished-view" style="display: none;">
       <h2 id="finishedTitle">ご参加ありがとうございました</h2>
@@ -68,6 +75,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=8"></script>
+  <script src="/js/screen.js?v=9"></script>
 </body>
 </html>

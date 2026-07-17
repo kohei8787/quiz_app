@@ -129,11 +129,18 @@
         <ul id="questionReviewList"></ul>
       </section>
     </div>
+
+    <!-- 結果発表（1〜3位セレモニー） -->
+    <div id="resultsView" class="card results-view" style="display: none;">
+      <h2>結果発表</h2>
+      <p id="resultsSubtitle" class="results-subtitle">上位表彰</p>
+      <div id="podium" class="podium" aria-live="polite"></div>
+    </div>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=13"></script>
+  <script src="/js/player.js?v=14"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@ const revealAnswersButton = document.getElementById("revealAnswersButton");
 const revealCorrectAnswerButton = document.getElementById("revealCorrectAnswerButton");
 const showSurveyResultsButton = document.getElementById("showSurveyResultsButton");
 const showRankingButton = document.getElementById("showRankingButton");
+const showResultsButton = document.getElementById("showResultsButton");
 const reopenJoinPhaseButton = document.getElementById("reopenJoinPhaseButton");
 const finishEventButton = document.getElementById("finishEventButton");
 const resetEventButton = document.getElementById("resetEventButton");
@@ -198,9 +199,16 @@ function updateActionButtons(state) {
   const showRevealCorrectAnswer = !inPractice && state.status === "answers_revealed";
   const showSurveyResults = !inPractice && state.status === "correct_revealed";
   const showRanking = !inPractice && state.status === "survey_results";
+  // 正解発表／アンケート／順位発表から結果発表（1〜3位）へ
+  const showResults =
+    !inPractice &&
+    (state.status === "correct_revealed" ||
+      state.status === "survey_results" ||
+      state.status === "ranking_revealed");
   const showExtendTime = state.status === "question";
   const showReopenJoin =
     state.status === "started" && !state.hasQuestionStarted && !inPractice;
+  // 結果発表後は終了ボタンで終了画面へ（進行中のほかの状態からも終了可）
   const showFinish = state.status !== "waiting" && state.status !== "finished";
   const showReset = state.status === "finished";
 
@@ -213,6 +221,7 @@ function updateActionButtons(state) {
   revealCorrectAnswerButton.style.display = showRevealCorrectAnswer ? "inline-block" : "none";
   showSurveyResultsButton.style.display = showSurveyResults ? "inline-block" : "none";
   showRankingButton.style.display = showRanking ? "inline-block" : "none";
+  showResultsButton.style.display = showResults ? "inline-block" : "none";
   extendTimeInput.style.display = showExtendTime ? "inline-block" : "none";
   extendTimeButton.style.display = showExtendTime ? "inline-block" : "none";
   reopenJoinPhaseButton.style.display = showReopenJoin ? "inline-block" : "none";
@@ -240,6 +249,7 @@ socket.on("stateUpdated", (state) => {
   if (state.status === "correct_revealed") statusEl.textContent = "正解発表中";
   if (state.status === "survey_results") statusEl.textContent = "アンケート結果公開";
   if (state.status === "ranking_revealed") statusEl.textContent = "順位発表中";
+  if (state.status === "results_announced") statusEl.textContent = "結果発表中";
   if (state.status === "finished") statusEl.textContent = "イベント終了";
 
   updateActionButtons(state);
@@ -393,6 +403,10 @@ showRankingButton.addEventListener("click", () => {
   socket.emit("showRanking");
 });
 
+showResultsButton.addEventListener("click", () => {
+  socket.emit("showResults");
+});
+
 extendTimeButton.addEventListener("click", () => {
   let seconds = parseInt(extendTimeInput.value, 10);
   if (!Number.isInteger(seconds) || seconds <= 0) {
@@ -408,7 +422,7 @@ reopenJoinPhaseButton.addEventListener("click", () => {
 // 危険操作：確認ダイアログを出してから実行する
 finishEventButton.addEventListener("click", () => {
   const ok = window.confirm(
-    "イベントを終了しますか？\n最終順位などの結果は残ります。"
+    "イベントを終了しますか？\n終了画面（最終順位・出題レビュー）へ進みます。"
   );
   if (!ok) {
     return;

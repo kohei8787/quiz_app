@@ -79,10 +79,13 @@
             <!-- 順位を発表する（アンケート結果公開の次へ遷移） -->
             <button id="showRankingButton" style="display: none;">順位発表</button>
 
+            <!-- 結果発表（1〜3位セレモニー。正解発表／アンケート／順位発表から） -->
+            <button id="showResultsButton" style="display: none;">結果発表</button>
+
             <!-- 参加受付を再開する -->
             <button id="reopenJoinPhaseButton" style="display: none;">参加受付に戻す</button>
 
-            <!-- イベント全体を終了する（結果を残す） -->
+            <!-- イベント全体を終了する（結果発表後は終了画面へ） -->
             <button id="finishEventButton" style="display: none;">イベント終了</button>
 
             <!-- 終了後にチーム・結果を消して最初からやり直す -->
@@ -185,6 +188,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 管理画面専用のJavaScript -->
-  <script src="/js/admin.js?v=9"></script>
+  <script src="/js/admin.js?v=10"></script>
 </body>
 </html>
