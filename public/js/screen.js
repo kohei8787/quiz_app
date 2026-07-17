@@ -18,8 +18,13 @@ const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
 const finishedView = document.getElementById("finishedView");
 const finishedRankingList = document.getElementById("finishedRankingList");
+const resultsView = document.getElementById("resultsView");
+const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+
+// 結果発表の公開段階（管理者が操作）
+let lastResultsRevealStep = -1;
 
 // 残り時間を mm:ss 形式の文字列にする
 function formatRemainingTime(seconds) {
@@ -56,6 +61,7 @@ socket.on("stateUpdated", (state) => {
     state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
   const showRankingView = state.status === "ranking_revealed";
+  const showResultsView = state.status === "results_announced";
   // イベント終了：参加受付ではなくお礼画面を表示
   const showFinishedView = state.status === "finished";
 
@@ -64,6 +70,7 @@ socket.on("stateUpdated", (state) => {
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
+  resultsView.style.display = showResultsView ? "block" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
 
   if (state.surveyImageUrl) {
@@ -92,13 +99,19 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "ranking_revealed") {
     statusEl.textContent = "順位発表";
     rankingTitle.textContent = "順位発表";
+  } else if (state.status === "results_announced") {
+    statusEl.textContent = "結果発表";
   } else if (state.status === "finished") {
     statusEl.textContent = "イベント終了";
   } else {
     statusEl.textContent = "イベント進行中";
   }
 
-  if (state.status !== "waiting" && state.status !== "finished") {
+  if (
+    state.status !== "waiting" &&
+    state.status !== "finished" &&
+    state.status !== "results_announced"
+  ) {
     currentQuestionText.textContent = state.currentQuestion
       ? state.currentQuestion.questionText
       : "出題を待っています";
@@ -128,6 +141,8 @@ socket.on("stateUpdated", (state) => {
 
   // 途中の順位発表
   renderRanking(rankingList, state, state.status === "ranking_revealed");
+  // 結果発表（1〜3位）
+  renderPodium(state, showResultsView);
   // 終了画面の最終順位
   renderRanking(finishedRankingList, state, state.status === "finished");
 });
@@ -143,6 +158,87 @@ function renderRanking(listEl, state, shouldShow) {
     const li = document.createElement("li");
     li.textContent = `${index + 1}位 ${team.name} - ${team.score}点`;
     listEl.appendChild(li);
+  });
+}
+
+function renderPodium(state, shouldShow) {
+  if (!shouldShow) {
+    podium.innerHTML = "";
+    lastResultsRevealStep = -1;
+    return;
+  }
+
+  const topTeams = (state.ranking || []).slice(0, 3);
+  const step = state.resultsRevealStep || 0;
+  const revealOrder = [3, 2, 1].filter((place) => place <= topTeams.length);
+  const revealedPlaces = new Set(revealOrder.slice(0, step));
+  const previouslyRevealed = new Set(
+    revealOrder.slice(0, Math.max(0, lastResultsRevealStep))
+  );
+  lastResultsRevealStep = step;
+
+  podium.innerHTML = "";
+
+  if (topTeams.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "podium-empty";
+    empty.textContent = "表示できるチームがありません";
+    podium.appendChild(empty);
+    return;
+  }
+
+  if (step === 0) {
+    const waiting = document.createElement("p");
+    waiting.className = "podium-empty";
+    waiting.textContent = "上位表彰の発表をお待ちください";
+    podium.appendChild(waiting);
+    return;
+  }
+
+  const displayOrder = [1, 0, 2].filter((index) => index < topTeams.length);
+
+  displayOrder.forEach((rankIndex) => {
+    const team = topTeams[rankIndex];
+    const place = rankIndex + 1;
+    const item = document.createElement("div");
+    item.className = `podium-place podium-place--${place}`;
+
+    if (!revealedPlaces.has(place)) {
+      item.classList.add("podium-place--hidden");
+      item.innerHTML = `
+        <p class="podium-name">？</p>
+        <p class="podium-score">--</p>
+        <div class="podium-block">
+          <span class="podium-rank">${place}</span>
+        </div>
+      `;
+      podium.appendChild(item);
+      return;
+    }
+
+    item.innerHTML = `
+      <p class="podium-name"></p>
+      <p class="podium-score"></p>
+      <div class="podium-block">
+        <span class="podium-rank">${place}</span>
+      </div>
+    `;
+    item.querySelector(".podium-name").textContent = team.name;
+    item.querySelector(".podium-score").textContent = `${team.score} pt`;
+
+    if (previouslyRevealed.has(place)) {
+      item.classList.add("is-visible");
+    }
+
+    podium.appendChild(item);
+  });
+
+  requestAnimationFrame(() => {
+    podium.querySelectorAll(".podium-place:not(.podium-place--hidden)").forEach((el) => {
+      if (!el.classList.contains("is-visible")) {
+        el.classList.add("is-visible");
+      }
+    });
   });
 }
 

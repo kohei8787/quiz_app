@@ -36,6 +36,8 @@ const rankingList = document.getElementById("rankingList");
 const myRankText = document.getElementById("myRankText");
 const questionReviewSection = document.getElementById("questionReviewSection");
 const questionReviewList = document.getElementById("questionReviewList");
+const resultsView = document.getElementById("resultsView");
+const podium = document.getElementById("podium");
 const timerValue = document.getElementById("timerValue");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const scoreText = document.getElementById("scoreText");
@@ -44,6 +46,9 @@ const resultTitle = document.getElementById("resultTitle");
 
 // 問題切り替え判定用
 let lastQuestionId = null;
+
+// 結果発表アニメーションの再実行判定用（公開済み段階）
+let lastResultsRevealStep = -1;
 
 // 自チーム名を保持してスコア表示に使う
 let myTeamName = "";
@@ -312,7 +317,9 @@ socket.on("stateUpdated", (state) => {
 
   const showJoinSection =
     state.status === "waiting" ||
-    (!hasJoined && state.status !== "finished") ||
+    (!hasJoined &&
+      state.status !== "finished" &&
+      state.status !== "results_announced") ||
     (hasJoined && state.status === "waiting");
   const showQuestionView =
     state.status === "question" ||
@@ -324,6 +331,7 @@ socket.on("stateUpdated", (state) => {
   // 順位発表中、またはイベント終了時に最終順位を表示
   const showRankingView =
     state.status === "ranking_revealed" || state.status === "finished";
+  const showResultsView = state.status === "results_announced";
 
   currentEventStatus = state.status;
 
@@ -339,6 +347,7 @@ socket.on("stateUpdated", (state) => {
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
+  resultsView.style.display = showResultsView ? "block" : "none";
 
   // リセット後など、チームがいなくなったら参加状態をクリア
   if (hasJoined) {
@@ -389,6 +398,9 @@ socket.on("stateUpdated", (state) => {
     statusEl.textContent = "順位発表中";
     answerArea.style.display = "none";
     rankingTitle.textContent = "順位発表";
+  } else if (state.status === "results_announced") {
+    statusEl.textContent = "結果発表中";
+    answerArea.style.display = "none";
   } else if (state.status === "finished") {
     statusEl.textContent = "イベント終了";
     answerArea.style.display = "none";
@@ -401,7 +413,11 @@ socket.on("stateUpdated", (state) => {
     answerArea.style.display = "none";
   }
 
-  if (state.status !== "waiting" && state.status !== "finished") {
+  if (
+    state.status !== "waiting" &&
+    state.status !== "finished" &&
+    state.status !== "results_announced"
+  ) {
     currentQuestionText.textContent = state.currentQuestion
       ? state.currentQuestion.questionText
       : "まだ問題は表示されていません";
@@ -432,6 +448,7 @@ socket.on("stateUpdated", (state) => {
   // 順位発表画面の描画
   renderRanking(state);
   renderQuestionReview(state);
+  renderPodium(state, showResultsView);
 });
 
 function renderRanking(state) {
@@ -505,6 +522,94 @@ function renderQuestionReview(state) {
   });
 
   questionReviewSection.style.display = "block";
+}
+
+// 結果発表：管理者が 3位→2位→1位 の順で公開するたびに表示
+function renderPodium(state, shouldShow) {
+  if (!shouldShow) {
+    podium.innerHTML = "";
+    lastResultsRevealStep = -1;
+    return;
+  }
+
+  const topTeams = (state.ranking || []).slice(0, 3);
+  const step = state.resultsRevealStep || 0;
+  const revealOrder = [3, 2, 1].filter((place) => place <= topTeams.length);
+  const revealedPlaces = new Set(revealOrder.slice(0, step));
+  const previouslyRevealed = new Set(
+    revealOrder.slice(0, Math.max(0, lastResultsRevealStep))
+  );
+  lastResultsRevealStep = step;
+
+  podium.innerHTML = "";
+
+  if (topTeams.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "podium-empty";
+    empty.textContent = "表示できるチームがありません";
+    podium.appendChild(empty);
+    return;
+  }
+
+  if (step === 0) {
+    const waiting = document.createElement("p");
+    waiting.className = "podium-empty";
+    waiting.textContent = "上位表彰の発表をお待ちください";
+    podium.appendChild(waiting);
+    return;
+  }
+
+  // 見た目の並び: 2位 | 1位 | 3位（未公開の枠はプレースホルダ）
+  const displayOrder = [1, 0, 2].filter((index) => index < topTeams.length);
+
+  displayOrder.forEach((rankIndex) => {
+    const team = topTeams[rankIndex];
+    const place = rankIndex + 1;
+    const item = document.createElement("div");
+    item.className = `podium-place podium-place--${place}`;
+
+    if (!revealedPlaces.has(place)) {
+      item.classList.add("podium-place--hidden");
+      item.innerHTML = `
+        <p class="podium-name">？</p>
+        <p class="podium-score">--</p>
+        <div class="podium-block">
+          <span class="podium-rank">${place}</span>
+        </div>
+      `;
+      podium.appendChild(item);
+      return;
+    }
+
+    item.innerHTML = `
+      <p class="podium-name"></p>
+      <p class="podium-score"></p>
+      <div class="podium-block">
+        <span class="podium-rank">${place}</span>
+      </div>
+    `;
+    item.querySelector(".podium-name").textContent = team.name;
+    item.querySelector(".podium-score").textContent = `${team.score} pt`;
+
+    if (team.name === myTeamName) {
+      item.classList.add("podium-place--own");
+    }
+
+    if (previouslyRevealed.has(place)) {
+      item.classList.add("is-visible");
+    }
+
+    podium.appendChild(item);
+  });
+
+  // 今回新しく公開された順位だけアニメーション
+  requestAnimationFrame(() => {
+    podium.querySelectorAll(".podium-place:not(.podium-place--hidden)").forEach((el) => {
+      if (!el.classList.contains("is-visible")) {
+        el.classList.add("is-visible");
+      }
+    });
+  });
 }
 
 function renderGauge(state, myTeam) {
