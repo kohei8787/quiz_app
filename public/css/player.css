@@ -148,6 +148,11 @@ body.joined #joinSection {
   display: none;
 }
 
+/* 参加コード入力欄は大文字に変換 */
+#joinCodeInput {
+  text-transform: uppercase;
+}
+
 /* 入力欄とボタンの共通スタイル */
 input,
 button {
