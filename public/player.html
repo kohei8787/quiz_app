@@ -34,9 +34,6 @@
       <!-- 未参加時の参加ボタン -->
       <button id="joinButton" type="button">クイズに参加する</button>
 
-      <!-- 参加後・編集前に表示。「チーム情報を変更」で編集モードへ -->
-      <button id="editTeamButton" type="button" style="display: none;">チーム情報を変更</button>
-
       <!-- 編集モード時の決定・キャンセル -->
       <div id="teamEditActions" style="display: none;">
         <button id="confirmTeamButton" type="button">決定</button>
@@ -63,6 +60,34 @@
       
       <!-- 開始待ちメッセージ -->
       <p class="waiting-message">開始をお待ちください...</p>
+    </div>
+
+    <!-- チーム情報編集画面 -->
+    <div id="editSection" class="card" style="display: none;">
+      <h2 id="editSectionTitle">チーム情報を編集</h2>
+
+      <!-- 管理者が指定した参加コードと座席番号を1行に並べる -->
+      <div class="row-inputs">
+        <!-- 参加コード（ロック） -->
+        <input id="editJoinCodeInput" type="text" placeholder="参加コード" disabled autocomplete="off" />
+
+        <!-- 座席番号プルダウン（編集可能） -->
+        <select id="editSeatNumberInput" aria-label="座席番号を選択">
+          <option value="">座席番号</option>
+        </select>
+      </div>
+
+      <!-- チーム名入力欄（編集可能） -->
+      <input id="editTeamNameInput" type="text" placeholder="チーム名を入力" />
+
+      <!-- 編集確定・キャンセル -->
+      <div id="editActions" style="display: flex; gap: 8px;">
+        <button id="editConfirmButton" type="button">決定</button>
+        <button id="editCancelButton" type="button">キャンセル</button>
+      </div>
+
+      <!-- 編集結果メッセージ -->
+      <p id="editMessage"></p>
     </div>
 
     <!-- 問題・回答画面（出題中） -->

@@ -7,7 +7,6 @@ const joinCodeInput = document.getElementById("joinCodeInput");
 const teamNameInput = document.getElementById("teamNameInput");
 const seatNumberInput = document.getElementById("seatNumberInput");
 const joinButton = document.getElementById("joinButton");
-const editTeamButton = document.getElementById("editTeamButton");
 const teamEditActions = document.getElementById("teamEditActions");
 const confirmTeamButton = document.getElementById("confirmTeamButton");
 const cancelTeamButton = document.getElementById("cancelTeamButton");
@@ -46,6 +45,15 @@ const resultTitle = document.getElementById("resultTitle");
 const joinedSection = document.getElementById("joinedSection");
 const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
+const editSection = document.getElementById("editSection");
+const editSectionTitle = document.getElementById("editSectionTitle");
+const editJoinCodeInput = document.getElementById("editJoinCodeInput");
+const editTeamNameInput = document.getElementById("editTeamNameInput");
+const editSeatNumberInput = document.getElementById("editSeatNumberInput");
+const editActions = document.getElementById("editActions");
+const editConfirmButton = document.getElementById("editConfirmButton");
+const editCancelButton = document.getElementById("editCancelButton");
+const editMessage = document.getElementById("editMessage");
 
 // 問題切り替え判定用
 let lastQuestionId = null;
@@ -199,35 +207,38 @@ function updateJoinFormMode() {
     seatNumberInput.disabled = false;
     joinButton.style.display = "block";
     joinButton.textContent = joinClosed ? "再接続" : "クイズに参加する";
-    editTeamButton.style.display = "none";
     teamEditActions.style.display = "none";
     return;
   }
 
   // ===== 参加済み =====
-  joinSectionTitle.textContent = "チーム情報";
-  joinCodeInput.style.display = "none";
-  joinButton.style.display = "none";
-
+  joinSectionTitle.textContent = isEditingTeamInfo ? "チーム情報を編集" : "チーム情報";
+  
   // イベント開始後は編集不可
   if (!canEdit) {
     isEditingTeamInfo = false;
+    joinCodeInput.style.display = "none";
+    joinButton.style.display = "none";
     teamNameInput.disabled = true;
     seatNumberInput.disabled = true;
-    editTeamButton.style.display = "none";
     teamEditActions.style.display = "none";
     return;
   }
 
   if (isEditingTeamInfo) {
-    teamNameInput.disabled = false;
-    seatNumberInput.disabled = false;
-    editTeamButton.style.display = "none";
-    teamEditActions.style.display = "flex";
+    // ===== 編集モード =====
+    joinCodeInput.style.display = "block";  // 参加コード表示
+    joinCodeInput.disabled = true;  // 参加コードはロック
+    teamNameInput.disabled = false;  // チーム名は編集可能
+    seatNumberInput.disabled = false;  // 座席番号は編集可能
+    joinButton.style.display = "none";  // 参加ボタンは非表示
+    teamEditActions.style.display = "flex";  // 決定・キャンセルボタン表示
   } else {
+    // ===== 表示モード（参加済みだが未編集） =====
+    joinCodeInput.style.display = "none";
+    joinButton.style.display = "none";
     teamNameInput.disabled = true;
     seatNumberInput.disabled = true;
-    editTeamButton.style.display = "block";
     teamEditActions.style.display = "none";
   }
 }
@@ -241,32 +252,24 @@ joinButton.addEventListener("click", () => {
   });
 });
 
-// 「チーム情報を変更」→ 編集モードへ（現在値を退避）
-editTeamButton.addEventListener("click", () => {
-  savedTeamName = teamNameInput.value;
-  savedSeatNumber = seatNumberInput.value;
-  isEditingTeamInfo = true;
-  joinMessage.textContent = "";
-  updateJoinFormMode();
-  teamNameInput.focus();
-});
-
-// 参加後画面の「チーム情報を変更」→ 編集フォームに戻す
+// 参加後画面の「チーム情報を編集」→ 編集画面に切り替え
 editTeamButtonAfterJoin.addEventListener("click", () => {
+  // 現在値を保存
   savedTeamName = teamNameInput.value;
   savedSeatNumber = seatNumberInput.value;
   isEditingTeamInfo = true;
-  joinMessage.textContent = "";
+  editMessage.textContent = "";
+  
+  // 編集画面に値を設定
+  const joinInfo = loadJoinInfo();
+  editJoinCodeInput.value = joinInfo?.joinCode || "";
+  editTeamNameInput.value = teamNameInput.value;
+  editSeatNumberInput.value = seatNumberInput.value;
+  
+  // 参加後画面を非表示、編集画面を表示
   joinedSection.style.display = "none";
-  joinSection.style.display = "block";
-  document.body.classList.remove("joined");
-  joinButton.style.display = "none";
-  editTeamButton.style.display = "none";
-  teamEditActions.style.display = "flex";
-  joinCodeInput.disabled = true;
-  teamNameInput.disabled = false;
-  seatNumberInput.disabled = false;
-  teamNameInput.focus();
+  editSection.style.display = "block";
+  editTeamNameInput.focus();
 });
 
 // 「決定」→ サーバーへ更新を送る
@@ -290,6 +293,22 @@ cancelTeamButton.addEventListener("click", () => {
   updateJoinFormMode();
 });
 
+// 編集画面の「決定」→ サーバーへ更新を送る
+editConfirmButton.addEventListener("click", () => {
+  socket.emit("updateTeamInfo", {
+    teamName: editTeamNameInput.value.trim(),
+    seatNumber: editSeatNumberInput.value.trim()
+  });
+});
+
+// 編集画面の「キャンセル」→ 参加後画面に戻す
+editCancelButton.addEventListener("click", () => {
+  isEditingTeamInfo = false;
+  editMessage.textContent = "";
+  editSection.style.display = "none";
+  joinedSection.style.display = "flex";
+});
+
 // 座席番号プルダウンを初期化
 socket.on("seatNumbersLoaded", (data) => {
   if (Array.isArray(data.seatNumbers)) {
@@ -297,12 +316,22 @@ socket.on("seatNumbersLoaded", (data) => {
     while (seatNumberInput.options.length > 1) {
       seatNumberInput.remove(1);
     }
+    // 既存のオプションをクリア（editSeatNumberInput）
+    while (editSeatNumberInput.options.length > 1) {
+      editSeatNumberInput.remove(1);
+    }
     // 座席番号をオプションとして追加
     data.seatNumbers.forEach((num) => {
       const option = document.createElement("option");
       option.value = String(num);
       option.textContent = String(num);
       seatNumberInput.appendChild(option);
+      
+      // editSeatNumberInputにもコピー
+      const editOption = document.createElement("option");
+      editOption.value = String(num);
+      editOption.textContent = String(num);
+      editSeatNumberInput.appendChild(editOption);
     });
   }
 });
@@ -325,6 +354,9 @@ socket.on("joinResult", (result) => {
     );
     joinedTeamNameDisplay.textContent = result.team.name;
     joinedSection.style.display = "flex";
+    editSection.style.display = "none";
+    joinSection.style.display = "none";
+    joinSection.style.visibility = "hidden";
     updateJoinFormMode();
   }
 });
@@ -344,6 +376,8 @@ socket.on("updateTeamResult", (result) => {
       (loadJoinInfo() && loadJoinInfo().joinCode) || joinCodeInput.value.trim()
     );
     joinedTeamNameDisplay.textContent = result.team.name;
+    editSection.style.display = "none";
+    editMessage.textContent = result.message;
     joinSection.style.display = "none";
     joinedSection.style.display = "flex";
     document.body.classList.add("joined");

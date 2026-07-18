@@ -63,8 +63,7 @@ body.answering #status {
 }
 
 /* 参加後は出題時以外も表示 */
-body.joined > .container > h1,
-body.joined > .container > #status {
+body.joined > .container > h1 {
   display: block;
 }
 
@@ -141,19 +140,96 @@ select:disabled {
 
 /* 参加後は参加フォームを非表示にする */
 body.joined #joinSection {
-  display: none;
+  display: none !important;
 }
 
-/* 参加後画面 — 白いボックスなし、中央配置 */
+/* 編集モード時（body.joinedが外される）は参加フォームを表示 */
+body:not(.joined) #joinSection {
+  display: block !important;
+}
+
+/* チーム情報編集画面 */
+#editSection {
+  margin-top: 0;
+  padding: 24px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: 80%;
+  width: 100%;
+  min-width: 320px;
+}
+
+#editSection h2 {
+  display: block;
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+#editActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#editActions button {
+  flex: 1;
+  width: auto;
+  margin: 8px 0;
+}
+
+#editCancelButton {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+#editMessage {
+  margin: 10px 0 0;
+  min-height: 1.2em;
+  font-size: 0.9rem;
+  color: #475569;
+  text-align: center;
+}
+
+/* 参加後画面が表示される時は、参加フォームも確実に非表示にする */
+#joinedSection:not([style*="display: none"]) {
+  pointer-events: auto;
+  z-index: 10000;
+}
+
+/* 参加後画面が表示される時、すべてのcardクラスを非表示にする */
+#joinedSection:not([style*="display: none"]) ~ #joinSection,
+#joinedSection:not([style*="display: none"]) ~ .card {
+  display: none !important;
+}
+
+/* 参加後画面 — 白いボックスなし、全画面中央配置 */
 #joinedSection {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 80vh;
-  width: 100%;
   padding: 40px 20px;
   box-sizing: border-box;
+  background: transparent;
+  z-index: 10000;
+}
+
+#joinedSection[style*="display: flex"] {
+  display: flex !important;
+}
+
+#joinedSection[style*="display: flex"] ~ #joinSection {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .checkmark-icon {
