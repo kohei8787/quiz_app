@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>参加者画面</title>
+  <title>Quiz</title>
 
   <!-- 参加者画面専用のCSS -->
   <link rel="stylesheet" href="/css/player.css" />
 </head>
 <body>
   <main class="container">
-    <!-- 画面タイトル -->
-    <h1>参加者画面</h1>
-
     <!-- 現在の状態を表示する場所 -->
-    <!-- <p id="status">接続中...</p> -->
+    <p id="status" style="display: none;">接続中...</p>
 
     <!-- 参加受付中に表示するエリア -->
     <div id="joinSection" class="card">
@@ -48,6 +45,24 @@
 
       <!-- 参加・更新結果メッセージ -->
       <p id="joinMessage"></p>
+    </div>
+
+    <!-- 参加後の画面 -->
+    <div id="joinedSection" class="joined-section" style="display: none;">
+      <!-- チェックマークアイコン -->
+      <div class="checkmark-icon">✓</div>
+      
+      <!-- 参加しました！メッセージ -->
+      <h2 class="joined-title">参加しました！</h2>
+      
+      <!-- チーム名表示 -->
+      <p id="joinedTeamNameDisplay" class="joined-team-name">チーム名: --</p>
+      
+      <!-- チーム情報編集ボタン -->
+      <button id="editTeamButtonAfterJoin" type="button" class="edit-team-btn">チーム情報を編集</button>
+      
+      <!-- 開始待ちメッセージ -->
+      <p class="waiting-message">開始をお待ちください...</p>
     </div>
 
     <!-- 問題・回答画面（出題中） -->
