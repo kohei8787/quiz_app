@@ -17,26 +17,40 @@
 body {
   margin: 0;
   font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  background: var(--player-bg);
+  background: url('/data/image/background/background-back.png') center/cover no-repeat;
+  background-attachment: fixed;
   color: var(--player-text);
+  min-height: 100vh;
 }
 
 /* メインコンテンツの幅と中央寄せ（スマホ向け） */
 .container {
-  max-width: 480px;
-  width: min(100%, 480px);
-  margin: 0 auto;
-  padding: 16px 12px 40px;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px;
   box-sizing: border-box;
 }
 
+/* 参加後は通常のレイアウトに戻す */
+body.joined .container {
+  justify-content: flex-start;
+  padding: 16px 12px 40px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
 .container > h1 {
+  display: none;
   margin: 0 0 8px;
   font-size: 1.35rem;
 }
 
 #status {
+  display: none;
   margin: 0 0 8px;
   color: #64748b;
   font-size: 0.9rem;
@@ -48,6 +62,12 @@ body.answering #status {
   display: none;
 }
 
+/* 参加後は出題時以外も表示 */
+body.joined > .container > h1,
+body.joined > .container > #status {
+  display: block;
+}
+
 /* 白いカード型のボックス（参加フォーム・問題表示など） */
 .card {
   background: var(--player-card);
@@ -56,6 +76,76 @@ body.answering #status {
   border-radius: 14px;
   border: 1px solid var(--player-border);
   box-shadow: none;
+  max-width: 480px;
+  width: 100%;
+}
+
+/* 参加後は通常サイズに戻す */
+body.joined .card {
+  max-width: none;
+}
+
+/* 参加フォーム用の特殊スタイル */
+#joinSection {
+  margin-top: 0;
+  padding: 24px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: 80%;
+  width: 100%;
+  min-width: 320px;
+}
+
+/* 参加コードと座席番号を1行に並べる（幅比 2:1） */
+#joinSection .row-inputs {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+#joinSection .row-inputs input {
+  flex: 2;
+  margin: 0;
+}
+
+#joinSection .row-inputs select {
+  flex: 1;
+  margin: 0;
+}
+
+select {
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-size: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:hover {
+  border-color: #94a3b8;
+}
+
+select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+select:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* 参加後は参加フォームを非表示にする */
+body.joined #joinSection {
+  display: none;
+}
+
+#joinSection h2 {
+  display: none;
 }
 
 /* 入力欄とボタンの共通スタイル */
@@ -63,13 +153,53 @@ input,
 button {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 12px;
-  margin: 8px 0;
+  padding: 12px 14px;
+  margin: 10px 0;
   font-size: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+input {
+  background: #fff;
+  color: #1e293b;
+  transition: border-color 0.2s;
+}
+
+input::placeholder {
+  color: #cbd5e1;
+}
+
+input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 button {
   cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* 参加ボタン */
+#joinButton {
+  background: linear-gradient(180deg, #25eb3c 0%, #b2f423 100%);
+  padding: 14px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 16px;
 }
 
 /* チーム情報の決定・キャンセルを横並びにする */

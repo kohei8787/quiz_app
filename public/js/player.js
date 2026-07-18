@@ -265,6 +265,23 @@ cancelTeamButton.addEventListener("click", () => {
   updateJoinFormMode();
 });
 
+// 座席番号プルダウンを初期化
+socket.on("seatNumbersLoaded", (data) => {
+  if (Array.isArray(data.seatNumbers)) {
+    // 既存のオプションをクリア（プレースホルダーのoption要素は残す）
+    while (seatNumberInput.options.length > 1) {
+      seatNumberInput.remove(1);
+    }
+    // 座席番号をオプションとして追加
+    data.seatNumbers.forEach((num) => {
+      const option = document.createElement("option");
+      option.value = String(num);
+      option.textContent = String(num);
+      seatNumberInput.appendChild(option);
+    });
+  }
+});
+
 // 参加結果受信
 socket.on("joinResult", (result) => {
   joinMessage.textContent = result.message;
@@ -272,6 +289,7 @@ socket.on("joinResult", (result) => {
   if (result.success) {
     myTeamName = result.team.name;
     hasJoined = true;
+    document.body.classList.add("joined");
     isEditingTeamInfo = false;
     savedTeamName = teamNameInput.value;
     savedSeatNumber = seatNumberInput.value;

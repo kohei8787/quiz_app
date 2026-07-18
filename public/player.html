@@ -20,17 +20,22 @@
     <div id="joinSection" class="card">
       <h2 id="joinSectionTitle">チーム参加</h2>
 
-      <!-- 管理者が指定した参加コード（参加後は非表示） -->
-      <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
+      <!-- 管理者が指定した参加コードと座席番号を1行に並べる -->
+      <div class="row-inputs">
+        <!-- 参加コード（幅比 2:1） -->
+        <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
+
+        <!-- 座席番号プルダウン（幅比 2:1） -->
+        <select id="seatNumberInput" aria-label="座席番号を選択">
+          <option value="">座席番号</option>
+        </select>
+      </div>
 
       <!-- チーム名入力欄 -->
       <input id="teamNameInput" type="text" placeholder="チーム名を入力" />
 
-      <!-- 座席番号入力欄（管理者だけが一覧で確認する） -->
-      <input id="seatNumberInput" type="text" placeholder="座席番号を入力" />
-
       <!-- 未参加時の参加ボタン -->
-      <button id="joinButton" type="button">参加</button>
+      <button id="joinButton" type="button">クイズに参加する</button>
 
       <!-- 参加後・編集前に表示。「チーム情報を変更」で編集モードへ -->
       <button id="editTeamButton" type="button" style="display: none;">チーム情報を変更</button>

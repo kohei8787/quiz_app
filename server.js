@@ -41,6 +41,7 @@ const practiceQuestion = Array.isArray(questionsData)
 
 // 管理画面用パスワード（data/admin-config.json で変更できる）
 let adminPassword = "quiz-admin";
+let seatNumbers = [];
 try {
   const adminConfig = JSON.parse(
     fs.readFileSync(path.join(__dirname, "data", "admin-config.json"), "utf-8")
@@ -48,8 +49,12 @@ try {
   if (adminConfig.adminPassword) {
     adminPassword = String(adminConfig.adminPassword);
   }
+  if (Array.isArray(adminConfig.seatNumbers)) {
+    seatNumbers = adminConfig.seatNumbers;
+  }
 } catch (e) {
   // 設定ファイルが無い場合はデフォルトを使う
+  seatNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
 }
 
 // タイマー停止用にsetIntervalのIDを保持する
@@ -398,6 +403,9 @@ function reclaimTeam(socket, team) {
 io.on("connection", (socket) => {
   // 接続した時点では一般画面向けの状態を送る
   socket.emit("stateUpdated", getPublicState());
+  
+  // プルダウン用の座席番号を送信
+  socket.emit("seatNumbersLoaded", { seatNumbers });
 
   // 管理画面ログイン（パスワード必須）
   socket.on("adminLogin", (password) => {
