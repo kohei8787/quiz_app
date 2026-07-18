@@ -195,7 +195,7 @@ function updateJoinFormMode() {
     teamNameInput.disabled = false;
     seatNumberInput.disabled = false;
     joinButton.style.display = "block";
-    joinButton.textContent = joinClosed ? "再接続" : "参加";
+    joinButton.textContent = joinClosed ? "再接続" : "クイズに参加する";
     editTeamButton.style.display = "none";
     teamEditActions.style.display = "none";
     return;

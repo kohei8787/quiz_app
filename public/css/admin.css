@@ -221,6 +221,10 @@ body {
   font-size: 14px;
 }
 
+#joinCodeMessage {
+  text-transform: uppercase;
+}
+
 #currentJoinCodeText {
   font-weight: bold;
   color: #2563eb;

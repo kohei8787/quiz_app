@@ -434,7 +434,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const trimmedCode = String(code || "").trim();
+    const trimmedCode = String(code || "").trim().toUpperCase();
 
     if (!trimmedCode) {
       socket.emit("joinCodeResult", {
