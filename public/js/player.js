@@ -431,6 +431,16 @@ socket.on("stateUpdated", (state) => {
       (state.status === "question" || state.status === "answer_closed")
   );
 
+  // 出題〜順位発表までは背景をグラデーションにする
+  const useGradientBackground =
+    state.status === "question" ||
+    state.status === "answer_closed" ||
+    state.status === "answers_revealed" ||
+    state.status === "correct_revealed" ||
+    state.status === "survey_results" ||
+    state.status === "ranking_revealed";
+  document.body.classList.toggle("event-gradient-bg", useGradientBackground);
+
   joinSection.style.display = showJoinSection ? "block" : "none";
 
   // 参加後・ waiting 中のみ参加完了画面を表示（編集中は非表示）

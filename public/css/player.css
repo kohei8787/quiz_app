@@ -23,6 +23,12 @@ body {
   min-height: 100vh;
 }
 
+/* 出題〜順位発表はグラデーション背景 */
+body.event-gradient-bg {
+  background: linear-gradient(180deg, #91EC89 0%, #EDE94E 100%);
+  background-attachment: fixed;
+}
+
 /* メインコンテンツの幅と中央寄せ（スマホ向け） */
 .container {
   display: flex;
