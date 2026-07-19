@@ -262,9 +262,9 @@ editTeamButtonAfterJoin.addEventListener("click", () => {
   
   // 編集画面に値を設定
   const joinInfo = loadJoinInfo();
-  editJoinCodeInput.value = joinInfo?.joinCode || "";
-  editTeamNameInput.value = teamNameInput.value;
-  editSeatNumberInput.value = seatNumberInput.value;
+  editJoinCodeInput.value = joinInfo?.joinCode || joinCodeInput.value || "";
+  editTeamNameInput.value = savedTeamName || teamNameInput.value;
+  editSeatNumberInput.value = savedSeatNumber || seatNumberInput.value || joinInfo?.seatNumber || "";
   
   // 参加後画面を非表示、編集画面を表示
   joinedSection.style.display = "none";
@@ -333,6 +333,11 @@ socket.on("seatNumbersLoaded", (data) => {
       editOption.textContent = String(num);
       editSeatNumberInput.appendChild(editOption);
     });
+
+    // 編集画面表示中なら、保存済みの座席番号を再選択する
+    if (editSection.style.display !== "none") {
+      editSeatNumberInput.value = savedSeatNumber || seatNumberInput.value || "";
+    }
   }
 });
 

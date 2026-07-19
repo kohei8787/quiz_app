@@ -158,6 +158,23 @@ body:not(.joined) #joinSection {
   min-width: 320px;
 }
 
+/* 編集画面でも参加画面と同じく参加コードと座席番号を横並びにする */
+#editSection .row-inputs {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+#editSection .row-inputs input {
+  flex: 2;
+  margin: 0;
+}
+
+#editSection .row-inputs select {
+  flex: 1;
+  margin: 0;
+}
+
 #editSection h2 {
   display: block;
   margin: 0 0 16px;
@@ -262,16 +279,24 @@ body:not(.joined) #joinSection {
   font-weight: 600;
 }
 
-.joined-edit-btn {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #cbd5e1;
+.joined-edit-btn,
+.edit-team-btn {
+  background: #9ca3af;
+  color: #f8fafc;
+  border: 1px solid #6b7280;
+  opacity: 0.88;
   width: auto;
-  padding: 10px 24px;
+  padding: 12px 28px;
   margin: 0 0 20px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
+}
+
+.joined-edit-btn:hover:not(:disabled),
+.edit-team-btn:hover:not(:disabled) {
+  background: #6b7280;
+  opacity: 0.95;
 }
 
 .waiting-message {
