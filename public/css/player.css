@@ -499,6 +499,7 @@ input:disabled {
 
 .badge-label {
   display: inline-block;
+  width: 84px;
   padding: 3px 8px;
   border-radius: 4px;
   background: #111111;
@@ -507,6 +508,8 @@ input:disabled {
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.4;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .badge-num {
@@ -537,11 +540,19 @@ input:disabled {
 }
 
 .answer-title {
+  display: inline-block;
+  width: 84px;
   margin: 0 0 16px;
-  font-size: 1rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #111111;
+  color: #EDE94E;
+  font-size: 0.7rem;
   font-weight: 700;
-  text-align: left;
-  color: var(--player-text);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .answer-stepper {
