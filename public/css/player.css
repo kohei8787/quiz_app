@@ -231,9 +231,9 @@ body:not(.joined) #joinSection {
   height: 100%;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
-  padding: 40px 20px;
+  padding: 15vh 40px 20px;
   box-sizing: border-box;
   background: transparent;
   z-index: 10000;
@@ -253,7 +253,7 @@ body:not(.joined) #joinSection {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #9EE34A;
+  background: #41e575;
   border: 4px solid #000;
   display: flex;
   align-items: center;
@@ -287,7 +287,7 @@ body:not(.joined) #joinSection {
   opacity: 0.88;
   width: auto;
   padding: 12px 28px;
-  margin: 0 0 20px;
+  margin: 0 0 18px;
   border-radius: 8px;
   font-size: 15px;
   cursor: pointer;

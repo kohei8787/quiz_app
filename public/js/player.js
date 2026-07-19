@@ -262,7 +262,7 @@ editTeamButtonAfterJoin.addEventListener("click", () => {
   
   // 編集画面に値を設定
   const joinInfo = loadJoinInfo();
-  editJoinCodeInput.value = joinInfo?.joinCode || joinCodeInput.value || "";
+  editJoinCodeInput.value = String(joinInfo?.joinCode || joinCodeInput.value || "").toUpperCase();
   editTeamNameInput.value = savedTeamName || teamNameInput.value;
   editSeatNumberInput.value = savedSeatNumber || seatNumberInput.value || joinInfo?.seatNumber || "";
   
@@ -357,7 +357,7 @@ socket.on("joinResult", (result) => {
       seatNumberInput.value.trim(),
       joinCodeInput.value.trim()
     );
-    joinedTeamNameDisplay.textContent = result.team.name;
+    joinedTeamNameDisplay.textContent = `チーム名：${result.team.name}`;
     joinedSection.style.display = "flex";
     editSection.style.display = "none";
     joinSection.style.display = "none";
@@ -380,7 +380,7 @@ socket.on("updateTeamResult", (result) => {
       seatNumberInput.value.trim(),
       (loadJoinInfo() && loadJoinInfo().joinCode) || joinCodeInput.value.trim()
     );
-    joinedTeamNameDisplay.textContent = result.team.name;
+    joinedTeamNameDisplay.textContent = `チーム名：${result.team.name}`;
     editSection.style.display = "none";
     editMessage.textContent = result.message;
     joinSection.style.display = "none";
