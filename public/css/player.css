@@ -501,8 +501,8 @@ input:disabled {
   display: inline-block;
   padding: 3px 8px;
   border-radius: 4px;
-  background: var(--player-accent);
-  color: #fff;
+  background: #111111;
+  color: #EDE94E;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -512,7 +512,7 @@ input:disabled {
 .badge-num {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
+  color: #111111;
 }
 
 .question-text {
@@ -650,6 +650,8 @@ input:disabled {
   height: 28px;
   margin: 0;
   padding: 0;
+  border: none;
+  border-radius: 0;
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
@@ -669,8 +671,8 @@ input:disabled {
   margin-top: -7px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--player-accent);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+  background: #0bb1a8;
+  box-shadow: 0 1px 4px #065e593b;
   cursor: pointer;
 }
 
@@ -685,8 +687,8 @@ input:disabled {
   height: 22px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--player-accent);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+  background: #0bb1a8;
+  box-shadow: 0 1px 4px #065e593b;
   cursor: pointer;
 }
 
@@ -709,8 +711,8 @@ input:disabled {
 
 .submit-answer-btn {
   width: 100%;
-  margin-top: 20px;
-  padding: 18px 16px;
+  margin-top: 24px;
+  padding: 24px 16px;
   border: none;
   border-radius: 10px;
   background: #60f176;
@@ -721,7 +723,7 @@ input:disabled {
 }
 
 .submit-answer-btn:hover:not(:disabled) {
-  background: var(--player-accent-hover);
+  background: #60f176;
 }
 
 .submit-answer-btn:disabled {

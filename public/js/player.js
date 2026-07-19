@@ -78,12 +78,15 @@ let savedSeatNumber = "";
 // 直近のイベント状態（参加受付中かどうかの判定用）
 let currentEventStatus = "waiting";
 
-// 残り時間を「◯秒」形式にする（モックアップ準拠）
+// 残り時間を mm:ss 形式にする
 function formatRemainingTime(seconds) {
   if (typeof seconds !== "number") {
-    return "--秒";
+    return "--:--";
   }
-  return `${seconds}秒`;
+  const totalSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainSeconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainSeconds).padStart(2, "0")}`;
 }
 
 // 回答値を 0〜100 の整数に丸める
@@ -113,7 +116,6 @@ function updateQuestionMeta(state) {
   const total = state.questionCount || 0;
 
   if (state.isPractice) {
-    questionProgress.textContent = "例題";
     questionBadgeNum.textContent = "例題";
     questionHint.textContent = "操作確認です。0〜100%の好きな値を選んでください";
     return;
@@ -126,11 +128,9 @@ function updateQuestionMeta(state) {
       : null;
 
   if (current !== null && total > 0) {
-    questionProgress.textContent = `第${current}問 / 全${total}問`;
-    questionBadgeNum.textContent = `${current} / ${total}`;
+    questionBadgeNum.textContent = `第${current}問`;
   } else {
-    questionProgress.textContent = total > 0 ? `全${total}問` : "第--問 / 全--問";
-    questionBadgeNum.textContent = "-- / --";
+    questionBadgeNum.textContent = "第--問";
   }
 
   questionHint.textContent = "0~100%の範囲で予測してください";
@@ -559,8 +559,9 @@ socket.on("stateUpdated", (state) => {
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);
   scoreText.textContent = myTeam
-    ? `累計スコア ${myTeam.score} pt`
-    : "累計スコア -- pt";
+    ? `スコア： ${myTeam.score} pt`
+    : "スコア： -- pt";
+  questionProgress.textContent = scoreText.textContent;
 
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
