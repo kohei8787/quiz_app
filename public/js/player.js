@@ -443,6 +443,12 @@ socket.on("stateUpdated", (state) => {
     state.status === "ranking_revealed";
   document.body.classList.toggle("event-gradient-bg", useGradientBackground);
 
+  // 結果発表中はサイド背景に切り替える
+  document.body.classList.toggle(
+    "results-background-side",
+    state.status === "results_announced"
+  );
+
   joinSection.style.display = showJoinSection ? "block" : "none";
 
   // 参加後・ waiting / started 中は参加完了画面を表示（編集中は非表示）

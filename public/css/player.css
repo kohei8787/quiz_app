@@ -29,6 +29,15 @@ body.event-gradient-bg {
   background-attachment: fixed;
 }
 
+/* 結果発表はサイド背景（幅合わせ・下端合わせ） */
+body.results-background-side {
+  background-image: url('/data/image/background/background-side.png');
+  background-position: center bottom;
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
 /* メインコンテンツの幅と中央寄せ（スマホ向け） */
 .container {
   display: flex;
