@@ -25,7 +25,7 @@ body {
 
 /* 出題〜順位発表はグラデーション背景 */
 body.event-gradient-bg {
-  background: linear-gradient(180deg, #91EC89 0%, #EDE94E 100%);
+  background: linear-gradient(180deg, #68f15b 0%, #f0ea3c 100%);
   background-attachment: fixed;
 }
 
@@ -77,12 +77,12 @@ body.joined > .container > h1 {
 .card {
   background: var(--player-card);
   padding: 20px 16px;
-  margin-top: 16px;
+  margin: 16px auto 0;
   border-radius: 14px;
   border: 1px solid var(--player-border);
   box-shadow: none;
+  width: 90%;
   max-width: 480px;
-  width: 100%;
 }
 
 /* 参加後は通常サイズに戻す */
@@ -709,12 +709,12 @@ input:disabled {
 
 .submit-answer-btn {
   width: 100%;
-  margin: 0;
-  padding: 14px 16px;
+  margin-top: 20px;
+  padding: 18px 16px;
   border: none;
   border-radius: 10px;
-  background: var(--player-accent);
-  color: #fff;
+  background: #60f176;
+  color: #000000;
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -725,7 +725,8 @@ input:disabled {
 }
 
 .submit-answer-btn:disabled {
-  background: #93c5fd;
+  background: #9af1a7;
+  color: #fff;
   cursor: not-allowed;
 }
 

@@ -45,6 +45,7 @@ const resultTitle = document.getElementById("resultTitle");
 const joinedSection = document.getElementById("joinedSection");
 const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
+const waitingMessage = document.querySelector(".waiting-message");
 const editSection = document.getElementById("editSection");
 const editSectionTitle = document.getElementById("editSectionTitle");
 const editJoinCodeInput = document.getElementById("editJoinCodeInput");
@@ -412,8 +413,7 @@ socket.on("stateUpdated", (state) => {
     (hasJoined && state.status === "waiting");
   const showQuestionView =
     state.status === "question" ||
-    state.status === "answer_closed" ||
-    state.status === "started";
+    state.status === "answer_closed";
   const showResultView =
     state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
@@ -443,9 +443,25 @@ socket.on("stateUpdated", (state) => {
 
   joinSection.style.display = showJoinSection ? "block" : "none";
 
-  // 参加後・ waiting 中のみ参加完了画面を表示（編集中は非表示）
-  const showJoinedSection = hasJoined && state.status === "waiting" && !isEditingTeamInfo;
+  // 参加後・ waiting / started 中は参加完了画面を表示（編集中は非表示）
+  const showJoinedSection =
+    hasJoined &&
+    (state.status === "waiting" || state.status === "started") &&
+    !isEditingTeamInfo;
   joinedSection.style.display = showJoinedSection ? "flex" : "none";
+
+  // started 中はチーム情報変更ボタンを隠す
+  if (editTeamButtonAfterJoin) {
+    editTeamButtonAfterJoin.style.display = state.status === "started" ? "none" : "inline-block";
+  }
+
+  // 参加後画面の案内文言
+  if (waitingMessage) {
+    waitingMessage.textContent =
+      state.status === "started"
+        ? "出題をお持ちください..."
+        : "開始をお待ちください...";
+  }
 
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
