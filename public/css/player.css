@@ -404,6 +404,7 @@ input:disabled {
 
 .question-phase {
   margin-top: 4px;
+  width: 100%;
   text-align: left;
 }
 
@@ -412,7 +413,9 @@ input:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 4px;
+  width: 90%;
+  max-width: 480px;
+  margin: 0 auto 4px;
 }
 
 .question-progress {

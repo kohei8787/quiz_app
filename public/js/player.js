@@ -412,6 +412,7 @@ socket.on("stateUpdated", (state) => {
       state.status !== "results_announced") ||
     (hasJoined && state.status === "waiting");
   const showQuestionView =
+    state.status === "started" ||
     state.status === "question" ||
     state.status === "answer_closed";
   const showResultView =
@@ -433,6 +434,7 @@ socket.on("stateUpdated", (state) => {
 
   // 出題〜順位発表までは背景をグラデーションにする
   const useGradientBackground =
+    state.status === "started" ||
     state.status === "question" ||
     state.status === "answer_closed" ||
     state.status === "answers_revealed" ||
@@ -446,7 +448,7 @@ socket.on("stateUpdated", (state) => {
   // 参加後・ waiting / started 中は参加完了画面を表示（編集中は非表示）
   const showJoinedSection =
     hasJoined &&
-    (state.status === "waiting" || state.status === "started") &&
+    state.status === "waiting" &&
     !isEditingTeamInfo;
   joinedSection.style.display = showJoinedSection ? "flex" : "none";
 
@@ -459,7 +461,7 @@ socket.on("stateUpdated", (state) => {
   if (waitingMessage) {
     waitingMessage.textContent =
       state.status === "started"
-        ? "出題をお持ちください..."
+        ? "出題をお待ちください..."
         : "開始をお待ちください...";
   }
 
@@ -529,7 +531,12 @@ socket.on("stateUpdated", (state) => {
     rankingTitle.textContent = "最終順位";
   } else if (state.status === "started") {
     statusEl.textContent = "イベント開始。例題または本番の出題を待っています";
-    answerArea.style.display = "none";
+    answerArea.style.display = "block";
+    currentQuestionText.textContent = "出題をお待ちください";
+    questionBadgeNum.textContent = "第--問";
+    questionHint.textContent = "まもなく出題されます";
+    answerMessage.textContent = "出題をお待ちください";
+    setAnswerControlsEnabled(false);
   } else if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
     answerArea.style.display = "none";
@@ -537,6 +544,7 @@ socket.on("stateUpdated", (state) => {
 
   if (
     state.status !== "waiting" &&
+    state.status !== "started" &&
     state.status !== "finished" &&
     state.status !== "results_announced"
   ) {
