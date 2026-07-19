@@ -17,10 +17,34 @@
 body {
   margin: 0;
   font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  background: url('/data/image/background/background-back.png') center/cover no-repeat;
-  background-attachment: fixed;
+  background-color: #eef1f6;
   color: var(--player-text);
   min-height: 100vh;
+}
+
+/* 固定背景レイヤー（機種差のあるセーフエリア下端を考慮） */
+.background-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.background-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.background-image-results {
+  display: none;
 }
 
 /* 出題〜順位発表はグラデーション背景 */
@@ -29,13 +53,21 @@ body.event-gradient-bg {
   background-attachment: fixed;
 }
 
+body.event-gradient-bg .background-layer {
+  display: none;
+}
+
 /* 結果発表はサイド背景（幅合わせ・下端合わせ） */
 body.results-background-side {
-  background-image: url('/data/image/background/background-side.png');
-  background-position: center bottom;
-  background-size: 100% auto;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: #eef1f6;
+}
+
+body.results-background-side .background-image-default {
+  display: none;
+}
+
+body.results-background-side .background-image-results {
+  display: block;
 }
 
 /* メインコンテンツの幅と中央寄せ（スマホ向け） */
@@ -44,6 +76,8 @@ body.results-background-side {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   width: 100%;
   padding: 20px;
