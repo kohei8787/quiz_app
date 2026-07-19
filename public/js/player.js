@@ -7,7 +7,6 @@ const joinCodeInput = document.getElementById("joinCodeInput");
 const teamNameInput = document.getElementById("teamNameInput");
 const seatNumberInput = document.getElementById("seatNumberInput");
 const joinButton = document.getElementById("joinButton");
-const editTeamButton = document.getElementById("editTeamButton");
 const teamEditActions = document.getElementById("teamEditActions");
 const confirmTeamButton = document.getElementById("confirmTeamButton");
 const cancelTeamButton = document.getElementById("cancelTeamButton");
@@ -43,6 +42,19 @@ const correctAnswerText = document.getElementById("correctAnswerText");
 const scoreText = document.getElementById("scoreText");
 const gaugeContainer = document.getElementById("gaugeContainer");
 const resultTitle = document.getElementById("resultTitle");
+const joinedSection = document.getElementById("joinedSection");
+const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
+const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
+const waitingMessage = document.querySelector(".waiting-message");
+const editSection = document.getElementById("editSection");
+const editSectionTitle = document.getElementById("editSectionTitle");
+const editJoinCodeInput = document.getElementById("editJoinCodeInput");
+const editTeamNameInput = document.getElementById("editTeamNameInput");
+const editSeatNumberInput = document.getElementById("editSeatNumberInput");
+const editActions = document.getElementById("editActions");
+const editConfirmButton = document.getElementById("editConfirmButton");
+const editCancelButton = document.getElementById("editCancelButton");
+const editMessage = document.getElementById("editMessage");
 
 // 問題切り替え判定用
 let lastQuestionId = null;
@@ -66,12 +78,15 @@ let savedSeatNumber = "";
 // 直近のイベント状態（参加受付中かどうかの判定用）
 let currentEventStatus = "waiting";
 
-// 残り時間を「◯秒」形式にする（モックアップ準拠）
+// 残り時間を mm:ss 形式にする
 function formatRemainingTime(seconds) {
   if (typeof seconds !== "number") {
-    return "--秒";
+    return "--:--";
   }
-  return `${seconds}秒`;
+  const totalSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainSeconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainSeconds).padStart(2, "0")}`;
 }
 
 // 回答値を 0〜100 の整数に丸める
@@ -101,7 +116,6 @@ function updateQuestionMeta(state) {
   const total = state.questionCount || 0;
 
   if (state.isPractice) {
-    questionProgress.textContent = "例題";
     questionBadgeNum.textContent = "例題";
     questionHint.textContent = "操作確認です。0〜100%の好きな値を選んでください";
     return;
@@ -114,11 +128,9 @@ function updateQuestionMeta(state) {
       : null;
 
   if (current !== null && total > 0) {
-    questionProgress.textContent = `第${current}問 / 全${total}問`;
-    questionBadgeNum.textContent = `${current} / ${total}`;
+    questionBadgeNum.textContent = `第${current}問`;
   } else {
-    questionProgress.textContent = total > 0 ? `全${total}問` : "第--問 / 全--問";
-    questionBadgeNum.textContent = "-- / --";
+    questionBadgeNum.textContent = "第--問";
   }
 
   questionHint.textContent = "0~100%の範囲で予測してください";
@@ -195,36 +207,39 @@ function updateJoinFormMode() {
     teamNameInput.disabled = false;
     seatNumberInput.disabled = false;
     joinButton.style.display = "block";
-    joinButton.textContent = joinClosed ? "再接続" : "参加";
-    editTeamButton.style.display = "none";
+    joinButton.textContent = joinClosed ? "再接続" : "クイズに参加する";
     teamEditActions.style.display = "none";
     return;
   }
 
   // ===== 参加済み =====
-  joinSectionTitle.textContent = "チーム情報";
-  joinCodeInput.style.display = "none";
-  joinButton.style.display = "none";
-
+  joinSectionTitle.textContent = isEditingTeamInfo ? "チーム情報を編集" : "チーム情報";
+  
   // イベント開始後は編集不可
   if (!canEdit) {
     isEditingTeamInfo = false;
+    joinCodeInput.style.display = "none";
+    joinButton.style.display = "none";
     teamNameInput.disabled = true;
     seatNumberInput.disabled = true;
-    editTeamButton.style.display = "none";
     teamEditActions.style.display = "none";
     return;
   }
 
   if (isEditingTeamInfo) {
-    teamNameInput.disabled = false;
-    seatNumberInput.disabled = false;
-    editTeamButton.style.display = "none";
-    teamEditActions.style.display = "flex";
+    // ===== 編集モード =====
+    joinCodeInput.style.display = "block";  // 参加コード表示
+    joinCodeInput.disabled = true;  // 参加コードはロック
+    teamNameInput.disabled = false;  // チーム名は編集可能
+    seatNumberInput.disabled = false;  // 座席番号は編集可能
+    joinButton.style.display = "none";  // 参加ボタンは非表示
+    teamEditActions.style.display = "flex";  // 決定・キャンセルボタン表示
   } else {
+    // ===== 表示モード（参加済みだが未編集） =====
+    joinCodeInput.style.display = "none";
+    joinButton.style.display = "none";
     teamNameInput.disabled = true;
     seatNumberInput.disabled = true;
-    editTeamButton.style.display = "block";
     teamEditActions.style.display = "none";
   }
 }
@@ -238,14 +253,24 @@ joinButton.addEventListener("click", () => {
   });
 });
 
-// 「チーム情報を変更」→ 編集モードへ（現在値を退避）
-editTeamButton.addEventListener("click", () => {
+// 参加後画面の「チーム情報を編集」→ 編集画面に切り替え
+editTeamButtonAfterJoin.addEventListener("click", () => {
+  // 現在値を保存
   savedTeamName = teamNameInput.value;
   savedSeatNumber = seatNumberInput.value;
   isEditingTeamInfo = true;
-  joinMessage.textContent = "";
-  updateJoinFormMode();
-  teamNameInput.focus();
+  editMessage.textContent = "";
+  
+  // 編集画面に値を設定
+  const joinInfo = loadJoinInfo();
+  editJoinCodeInput.value = String(joinInfo?.joinCode || joinCodeInput.value || "").toUpperCase();
+  editTeamNameInput.value = savedTeamName || teamNameInput.value;
+  editSeatNumberInput.value = savedSeatNumber || seatNumberInput.value || joinInfo?.seatNumber || "";
+  
+  // 参加後画面を非表示、編集画面を表示
+  joinedSection.style.display = "none";
+  editSection.style.display = "block";
+  editTeamNameInput.focus();
 });
 
 // 「決定」→ サーバーへ更新を送る
@@ -262,7 +287,59 @@ cancelTeamButton.addEventListener("click", () => {
   seatNumberInput.value = savedSeatNumber;
   isEditingTeamInfo = false;
   joinMessage.textContent = "";
+  joinSection.style.display = "none";
+  joinedSection.style.display = "flex";
+  document.body.classList.add("joined");
+  joinCodeInput.disabled = false;
   updateJoinFormMode();
+});
+
+// 編集画面の「決定」→ サーバーへ更新を送る
+editConfirmButton.addEventListener("click", () => {
+  socket.emit("updateTeamInfo", {
+    teamName: editTeamNameInput.value.trim(),
+    seatNumber: editSeatNumberInput.value.trim()
+  });
+});
+
+// 編集画面の「キャンセル」→ 参加後画面に戻す
+editCancelButton.addEventListener("click", () => {
+  isEditingTeamInfo = false;
+  editMessage.textContent = "";
+  editSection.style.display = "none";
+  joinedSection.style.display = "flex";
+});
+
+// 座席番号プルダウンを初期化
+socket.on("seatNumbersLoaded", (data) => {
+  if (Array.isArray(data.seatNumbers)) {
+    // 既存のオプションをクリア（プレースホルダーのoption要素は残す）
+    while (seatNumberInput.options.length > 1) {
+      seatNumberInput.remove(1);
+    }
+    // 既存のオプションをクリア（editSeatNumberInput）
+    while (editSeatNumberInput.options.length > 1) {
+      editSeatNumberInput.remove(1);
+    }
+    // 座席番号をオプションとして追加
+    data.seatNumbers.forEach((num) => {
+      const option = document.createElement("option");
+      option.value = String(num);
+      option.textContent = String(num);
+      seatNumberInput.appendChild(option);
+      
+      // editSeatNumberInputにもコピー
+      const editOption = document.createElement("option");
+      editOption.value = String(num);
+      editOption.textContent = String(num);
+      editSeatNumberInput.appendChild(editOption);
+    });
+
+    // 編集画面表示中なら、保存済みの座席番号を再選択する
+    if (editSection.style.display !== "none") {
+      editSeatNumberInput.value = savedSeatNumber || seatNumberInput.value || "";
+    }
+  }
 });
 
 // 参加結果受信
@@ -272,6 +349,7 @@ socket.on("joinResult", (result) => {
   if (result.success) {
     myTeamName = result.team.name;
     hasJoined = true;
+    document.body.classList.add("joined");
     isEditingTeamInfo = false;
     savedTeamName = teamNameInput.value;
     savedSeatNumber = seatNumberInput.value;
@@ -280,6 +358,11 @@ socket.on("joinResult", (result) => {
       seatNumberInput.value.trim(),
       joinCodeInput.value.trim()
     );
+    joinedTeamNameDisplay.textContent = `チーム名：${result.team.name}`;
+    joinedSection.style.display = "flex";
+    editSection.style.display = "none";
+    joinSection.style.display = "none";
+    joinSection.style.visibility = "hidden";
     updateJoinFormMode();
   }
 });
@@ -298,6 +381,13 @@ socket.on("updateTeamResult", (result) => {
       seatNumberInput.value.trim(),
       (loadJoinInfo() && loadJoinInfo().joinCode) || joinCodeInput.value.trim()
     );
+    joinedTeamNameDisplay.textContent = `チーム名：${result.team.name}`;
+    editSection.style.display = "none";
+    editMessage.textContent = result.message;
+    joinSection.style.display = "none";
+    joinedSection.style.display = "flex";
+    document.body.classList.add("joined");
+    joinCodeInput.disabled = false;
     updateJoinFormMode();
   }
 });
@@ -323,8 +413,7 @@ socket.on("stateUpdated", (state) => {
     (hasJoined && state.status === "waiting");
   const showQuestionView =
     state.status === "question" ||
-    state.status === "answer_closed" ||
-    state.status === "started";
+    state.status === "answer_closed";
   const showResultView =
     state.status === "answers_revealed" || state.status === "correct_revealed";
   const showSurveyResultsView = state.status === "survey_results";
@@ -342,7 +431,38 @@ socket.on("stateUpdated", (state) => {
       (state.status === "question" || state.status === "answer_closed")
   );
 
+  // 出題〜順位発表までは背景をグラデーションにする
+  const useGradientBackground =
+    state.status === "question" ||
+    state.status === "answer_closed" ||
+    state.status === "answers_revealed" ||
+    state.status === "correct_revealed" ||
+    state.status === "survey_results" ||
+    state.status === "ranking_revealed";
+  document.body.classList.toggle("event-gradient-bg", useGradientBackground);
+
   joinSection.style.display = showJoinSection ? "block" : "none";
+
+  // 参加後・ waiting / started 中は参加完了画面を表示（編集中は非表示）
+  const showJoinedSection =
+    hasJoined &&
+    (state.status === "waiting" || state.status === "started") &&
+    !isEditingTeamInfo;
+  joinedSection.style.display = showJoinedSection ? "flex" : "none";
+
+  // started 中はチーム情報変更ボタンを隠す
+  if (editTeamButtonAfterJoin) {
+    editTeamButtonAfterJoin.style.display = state.status === "started" ? "none" : "inline-block";
+  }
+
+  // 参加後画面の案内文言
+  if (waitingMessage) {
+    waitingMessage.textContent =
+      state.status === "started"
+        ? "出題をお持ちください..."
+        : "開始をお待ちください...";
+  }
+
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
@@ -357,6 +477,8 @@ socket.on("stateUpdated", (state) => {
       myTeamName = "";
       isEditingTeamInfo = false;
       joinMessage.textContent = "";
+      joinedSection.style.display = "none";
+      document.body.classList.remove("joined");
       clearJoinInfo();
     }
   }
@@ -437,8 +559,9 @@ socket.on("stateUpdated", (state) => {
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);
   scoreText.textContent = myTeam
-    ? `累計スコア ${myTeam.score} pt`
-    : "累計スコア -- pt";
+    ? `スコア： ${myTeam.score} pt`
+    : "スコア： -- pt";
+  questionProgress.textContent = scoreText.textContent;
 
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {

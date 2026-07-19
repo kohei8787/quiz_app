@@ -3,37 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>参加者画面</title>
+  <title>Quiz</title>
 
   <!-- 参加者画面専用のCSS -->
   <link rel="stylesheet" href="/css/player.css" />
 </head>
 <body>
   <main class="container">
-    <!-- 画面タイトル -->
-    <h1>参加者画面</h1>
-
     <!-- 現在の状態を表示する場所 -->
-    <p id="status">接続中...</p>
+    <p id="status" style="display: none;">接続中...</p>
 
     <!-- 参加受付中に表示するエリア -->
     <div id="joinSection" class="card">
       <h2 id="joinSectionTitle">チーム参加</h2>
 
-      <!-- 管理者が指定した参加コード（参加後は非表示） -->
-      <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
+      <!-- 管理者が指定した参加コードと座席番号を1行に並べる -->
+      <div class="row-inputs">
+        <!-- 参加コード（幅比 2:1） -->
+        <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
+
+        <!-- 座席番号プルダウン（幅比 2:1） -->
+        <select id="seatNumberInput" aria-label="座席番号を選択">
+          <option value="">座席番号</option>
+        </select>
+      </div>
 
       <!-- チーム名入力欄 -->
       <input id="teamNameInput" type="text" placeholder="チーム名を入力" />
 
-      <!-- 座席番号入力欄（管理者だけが一覧で確認する） -->
-      <input id="seatNumberInput" type="text" placeholder="座席番号を入力" />
-
       <!-- 未参加時の参加ボタン -->
-      <button id="joinButton" type="button">参加</button>
-
-      <!-- 参加後・編集前に表示。「チーム情報を変更」で編集モードへ -->
-      <button id="editTeamButton" type="button" style="display: none;">チーム情報を変更</button>
+      <button id="joinButton" type="button">クイズに参加する</button>
 
       <!-- 編集モード時の決定・キャンセル -->
       <div id="teamEditActions" style="display: none;">
@@ -45,12 +44,58 @@
       <p id="joinMessage"></p>
     </div>
 
+    <!-- 参加後の画面 -->
+    <div id="joinedSection" class="joined-section" style="display: none;">
+      <!-- チェックマークアイコン -->
+      <div class="checkmark-icon">✓</div>
+      
+      <!-- 参加しました！メッセージ -->
+      <h2 class="joined-title">参加しました！</h2>
+      
+      <!-- チーム名表示 -->
+      <p id="joinedTeamNameDisplay" class="joined-team-name">チーム名: --</p>
+      
+      <!-- チーム情報編集ボタン -->
+      <button id="editTeamButtonAfterJoin" type="button" class="edit-team-btn">チーム情報を変更</button>
+      
+      <!-- 開始待ちメッセージ -->
+      <p class="waiting-message">出題をお持ちください...</p>
+    </div>
+
+    <!-- チーム情報編集画面 -->
+    <div id="editSection" class="card" style="display: none;">
+      <!-- <h2 id="editSectionTitle">チーム情報を変更</h2> -->
+
+      <!-- 管理者が指定した参加コードと座席番号を1行に並べる -->
+      <div class="row-inputs">
+        <!-- 参加コード（ロック） -->
+        <input id="editJoinCodeInput" type="text" placeholder="参加コード" disabled autocomplete="off" />
+
+        <!-- 座席番号プルダウン（編集可能） -->
+        <select id="editSeatNumberInput" aria-label="座席番号を選択">
+          <option value="">座席番号</option>
+        </select>
+      </div>
+
+      <!-- チーム名入力欄（編集可能） -->
+      <input id="editTeamNameInput" type="text" placeholder="チーム名を入力" />
+
+      <!-- 編集確定・キャンセル -->
+      <div id="editActions" style="display: flex; gap: 8px;">
+        <button id="editConfirmButton" type="button">決定</button>
+        <button id="editCancelButton" type="button">キャンセル</button>
+      </div>
+
+      <!-- 編集結果メッセージ -->
+      <p id="editMessage"></p>
+    </div>
+
     <!-- 問題・回答画面（出題中） -->
     <div id="questionView" class="question-phase" style="display: none;">
       <header class="player-header">
-        <p id="questionProgress" class="question-progress">第--問 / 全--問</p>
+        <p id="scoreText" class="score-text">スコア： -- pt</p>
         <div class="header-meta">
-          <p id="scoreText" class="score-text">累計スコア -- pt</p>
+          <!-- <p id="scoreText" class="score-text">累計スコア -- pt</p> -->
           <p id="timerText" class="timer-text">
             <span class="timer-icon" aria-hidden="true"></span>
             <span id="timerValue">--秒</span>
@@ -95,7 +140,7 @@
           />
           <span class="answer-slider-scale" aria-hidden="true">100</span>
         </div>
-        <button id="submitAnswerButton" type="button" class="submit-answer-btn">回答を確定する</button>
+        <button id="submitAnswerButton" type="button" class="submit-answer-btn">回答を送信</button>
         <p id="answerMessage" class="answer-message"></p>
       </section>
     </div>

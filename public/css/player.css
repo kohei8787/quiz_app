@@ -17,26 +17,46 @@
 body {
   margin: 0;
   font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  background: var(--player-bg);
+  background: url('/data/image/background/background-back.png') center/cover no-repeat;
+  background-attachment: fixed;
   color: var(--player-text);
+  min-height: 100vh;
+}
+
+/* 出題〜順位発表はグラデーション背景 */
+body.event-gradient-bg {
+  background: linear-gradient(180deg, #68f15b 0%, #f0ea3c 100%);
+  background-attachment: fixed;
 }
 
 /* メインコンテンツの幅と中央寄せ（スマホ向け） */
 .container {
-  max-width: 480px;
-  width: min(100%, 480px);
-  margin: 0 auto;
-  padding: 16px 12px 40px;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px;
   box-sizing: border-box;
 }
 
+/* 参加後は通常のレイアウトに戻す */
+body.joined .container {
+  justify-content: flex-start;
+  padding: 16px 12px 40px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
 .container > h1 {
+  display: none;
   margin: 0 0 8px;
   font-size: 1.35rem;
 }
 
 #status {
+  display: none;
   margin: 0 0 8px;
   color: #64748b;
   font-size: 0.9rem;
@@ -48,14 +68,257 @@ body.answering #status {
   display: none;
 }
 
+/* 参加後は出題時以外も表示 */
+body.joined > .container > h1 {
+  display: block;
+}
+
 /* 白いカード型のボックス（参加フォーム・問題表示など） */
 .card {
   background: var(--player-card);
   padding: 20px 16px;
-  margin-top: 16px;
+  margin: 16px auto 0;
   border-radius: 14px;
   border: 1px solid var(--player-border);
   box-shadow: none;
+  width: 90%;
+  max-width: 480px;
+}
+
+/* 参加後は通常サイズに戻す */
+body.joined .card {
+  max-width: none;
+}
+
+/* 参加フォーム用の特殊スタイル */
+#joinSection {
+  margin-top: 0;
+  padding: 24px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: 80%;
+  width: 100%;
+  min-width: 320px;
+}
+
+/* 参加コードと座席番号を1行に並べる（幅比 2:1） */
+#joinSection .row-inputs {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+#joinSection .row-inputs input {
+  flex: 2;
+  margin: 0;
+}
+
+#joinSection .row-inputs select {
+  flex: 1;
+  margin: 0;
+}
+
+select {
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-size: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:hover {
+  border-color: #94a3b8;
+}
+
+select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+select:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* 参加後は参加フォームを非表示にする */
+body.joined #joinSection {
+  display: none !important;
+}
+
+/* 編集モード時（body.joinedが外される）は参加フォームを表示 */
+body:not(.joined) #joinSection {
+  display: block !important;
+}
+
+/* チーム情報編集画面 */
+#editSection {
+  margin-top: 0;
+  padding: 24px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: 80%;
+  width: 100%;
+  min-width: 320px;
+}
+
+/* 編集画面でも参加画面と同じく参加コードと座席番号を横並びにする */
+#editSection .row-inputs {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+#editSection .row-inputs input {
+  flex: 2;
+  margin: 0;
+}
+
+#editSection .row-inputs select {
+  flex: 1;
+  margin: 0;
+}
+
+#editSection h2 {
+  display: block;
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+#editActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#editActions button {
+  flex: 1;
+  width: auto;
+  margin: 8px 0;
+}
+
+#editCancelButton {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+#editMessage {
+  margin: 10px 0 0;
+  min-height: 1.2em;
+  font-size: 0.9rem;
+  color: #475569;
+  text-align: center;
+}
+
+/* 参加後画面が表示される時は、参加フォームも確実に非表示にする */
+#joinedSection:not([style*="display: none"]) {
+  pointer-events: auto;
+  z-index: 10000;
+}
+
+/* 参加後画面が表示される時、すべてのcardクラスを非表示にする */
+#joinedSection:not([style*="display: none"]) ~ #joinSection,
+#joinedSection:not([style*="display: none"]) ~ .card {
+  display: none !important;
+}
+
+/* 参加後画面 — 白いボックスなし、全画面中央配置 */
+#joinedSection {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  padding: 15vh 40px 20px;
+  box-sizing: border-box;
+  background: transparent;
+  z-index: 10000;
+}
+
+#joinedSection[style*="display: flex"] {
+  display: flex !important;
+}
+
+#joinedSection[style*="display: flex"] ~ #joinSection {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.checkmark-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #41e575;
+  border: 4px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: #000;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.joined-title {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.joined-team-name {
+  margin: 0 0 24px;
+  font-size: 1.1rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.joined-edit-btn,
+.edit-team-btn {
+  background: #9ca3af;
+  color: #f8fafc;
+  border: 1px solid #6b7280;
+  opacity: 0.88;
+  width: auto;
+  padding: 12px 28px;
+  margin: 0 0 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.joined-edit-btn:hover:not(:disabled),
+.edit-team-btn:hover:not(:disabled) {
+  background: #6b7280;
+  opacity: 0.95;
+}
+
+.waiting-message {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+#joinSection h2 {
+  display: none;
+}
+
+/* 参加コード入力欄は大文字に変換 */
+#joinCodeInput {
+  text-transform: uppercase;
 }
 
 /* 入力欄とボタンの共通スタイル */
@@ -63,13 +326,53 @@ input,
 button {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 12px;
-  margin: 8px 0;
+  padding: 12px 14px;
+  margin: 10px 0;
   font-size: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+input {
+  background: #fff;
+  color: #1e293b;
+  transition: border-color 0.2s;
+}
+
+input::placeholder {
+  color: #cbd5e1;
+}
+
+input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 button {
   cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* 参加ボタン */
+#joinButton {
+  background: linear-gradient(180deg, #25eb3c 0%, #b2f423 100%);
+  padding: 14px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 16px;
 }
 
 /* チーム情報の決定・キャンセルを横並びにする */
@@ -198,8 +501,8 @@ input:disabled {
   display: inline-block;
   padding: 3px 8px;
   border-radius: 4px;
-  background: var(--player-accent);
-  color: #fff;
+  background: #111111;
+  color: #EDE94E;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -209,7 +512,7 @@ input:disabled {
 .badge-num {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
+  color: #111111;
 }
 
 .question-text {
@@ -347,6 +650,8 @@ input:disabled {
   height: 28px;
   margin: 0;
   padding: 0;
+  border: none;
+  border-radius: 0;
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
@@ -366,8 +671,8 @@ input:disabled {
   margin-top: -7px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--player-accent);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+  background: #0bb1a8;
+  box-shadow: 0 1px 4px #065e593b;
   cursor: pointer;
 }
 
@@ -382,8 +687,8 @@ input:disabled {
   height: 22px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--player-accent);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+  background: #0bb1a8;
+  box-shadow: 0 1px 4px #065e593b;
   cursor: pointer;
 }
 
@@ -406,23 +711,24 @@ input:disabled {
 
 .submit-answer-btn {
   width: 100%;
-  margin: 0;
-  padding: 14px 16px;
+  margin-top: 24px;
+  padding: 24px 16px;
   border: none;
   border-radius: 10px;
-  background: var(--player-accent);
-  color: #fff;
+  background: #60f176;
+  color: #000000;
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .submit-answer-btn:hover:not(:disabled) {
-  background: var(--player-accent-hover);
+  background: #60f176;
 }
 
 .submit-answer-btn:disabled {
-  background: #93c5fd;
+  background: #9af1a7;
+  color: #fff;
   cursor: not-allowed;
 }
 
