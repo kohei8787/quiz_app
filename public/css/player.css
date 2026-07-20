@@ -79,9 +79,17 @@ body.results-background-side .background-image-results {
   position: relative;
   z-index: 1;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   padding: 20px;
   box-sizing: border-box;
+}
+
+/* 参加画面は縦横とも中央に固定 */
+body:not(.joined) .container {
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
 }
 
 /* 参加後は通常のレイアウトに戻す */
@@ -134,13 +142,26 @@ body.joined .card {
 }
 
 /* 参加フォーム用の特殊スタイル */
+.join-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 80%;
+  min-width: min(320px, 100%);
+  margin: 0 auto;
+}
+
 #joinSection {
   margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
   padding: 24px 20px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  max-width: 80%;
+  max-width: none;
   width: 100%;
-  min-width: 320px;
+  min-width: 0;
 }
 
 .join-welcome-logo {
@@ -149,10 +170,6 @@ body.joined .card {
   height: auto;
   margin: 0 auto 20px;
   flex-shrink: 0;
-}
-
-body.joined .join-welcome-logo {
-  display: none !important;
 }
 
 /* 参加コードと座席番号を1行に並べる（幅比 2:1） */
@@ -200,13 +217,13 @@ select:disabled {
 }
 
 /* 参加後は参加フォームを非表示にする */
-body.joined #joinSection {
+body.joined .join-stack {
   display: none !important;
 }
 
-/* 編集モード時（body.joinedが外される）は参加フォームを表示 */
-body:not(.joined) #joinSection {
-  display: block !important;
+/* 未参加時は参加スタックを表示 */
+body:not(.joined) .join-stack {
+  display: flex !important;
 }
 
 /* チーム情報編集画面 */
@@ -276,8 +293,8 @@ body:not(.joined) #joinSection {
   z-index: 10000;
 }
 
-/* 参加後画面が表示される時、すべてのcardクラスを非表示にする */
-#joinedSection:not([style*="display: none"]) ~ #joinSection,
+/* 参加後画面が表示される時、参加スタック・他カードを非表示にする */
+#joinedSection:not([style*="display: none"]) ~ .join-stack,
 #joinedSection:not([style*="display: none"]) ~ .card {
   display: none !important;
 }
@@ -304,7 +321,7 @@ body:not(.joined) #joinSection {
   display: flex !important;
 }
 
-#joinedSection[style*="display: flex"] ~ #joinSection {
+#joinedSection[style*="display: flex"] ~ .join-stack {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
@@ -817,6 +834,10 @@ input:disabled {
 
   .container {
     padding: 12px 10px 28px;
+  }
+
+  body:not(.joined) .container {
+    padding: 16px;
   }
 
   .card {
