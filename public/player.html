@@ -182,13 +182,35 @@
     </div>
 
     <!-- 回答公開・正解発表用のエリア -->
-    <div id="resultView" class="card result-card" style="display: none;">
-      <h2 id="resultTitle">回答公開</h2>
-      <p id="correctAnswerText" class="result-correct-text">正解: --</p>
-      <div id="revealedAnswersSection">
-        <div id="gaugeContainer" class="tacho-container"></div>
-      </div>
-      <div id="myTeamResult" class="my-team-result" style="display: none;"></div>
+    <div id="resultView" class="result-view" style="display: none;">
+      <section class="card result-card result-gauge-card">
+        <div id="revealedAnswersSection">
+          <div id="gaugeContainer" class="tacho-container"></div>
+        </div>
+        <div id="resultSummaryGrid" class="result-summary-grid" aria-label="回答概要">
+          <div class="result-summary-item">
+            <span class="result-summary-label">あなたの回答</span>
+            <span id="summaryMyAnswer" class="result-summary-value">--%</span>
+          </div>
+          <div class="result-summary-item">
+            <span class="result-summary-label">正解</span>
+            <span id="summaryCorrect" class="result-summary-value">--%</span>
+          </div>
+          <div class="result-summary-item">
+            <span class="result-summary-label">スコア</span>
+            <span id="summaryScore" class="result-summary-value">-- pt</span>
+          </div>
+          <div class="result-summary-item">
+            <span class="result-summary-label">現在の得点</span>
+            <span id="summaryCurrentScore" class="result-summary-value">-- pt</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card result-card result-answers-card">
+        <h2>各チームの回答</h2>
+        <ul id="revealedAnswersList" class="revealed-answers-list"></ul>
+      </section>
     </div>
 
     <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
