@@ -1,66 +1,132 @@
 {
   "practice": {
     "id": "practice",
-    "questionText": "【例題】スマホやPCの操作確認です。上下ボタンか数字入力で、あなたが好きな数字（0〜100）を選んで「回答を確定する」を押してください。正解発表はありません。"
+    "surveyQuestion": "Q.キャリア形成において重視するのは？",
+    "surveyOptions": [
+      { "key": "A", "label": "一つの専門領域を極める" },
+      { "key": "B", "label": "広い知識と経験を持ち、視野を広げる" }
+    ],
+    "focusOption": "A",
+    "questionText": "{{A}}と答えた新入社員の割合は何％でしょう？"
   },
   "questions": [
     {
       "id": 1,
-      "questionText": "社内アンケートで『朝食を毎日食べる』と答えた人の割合は？",
+      "surveyQuestion": "Q.朝食について",
+      "surveyOptions": [
+        { "key": "A", "label": "朝食を毎日食べる" },
+        { "key": "B", "label": "朝食はあまり食べない" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 68,
       "surveyImage": "/data/survey/1.svg"
     },
     {
       "id": 2,
-      "questionText": "社内アンケートで『リモートワークを週3日以上希望する』と答えた人の割合は？",
+      "surveyQuestion": "Q.リモートワークについて",
+      "surveyOptions": [
+        { "key": "A", "label": "週3日以上希望する" },
+        { "key": "B", "label": "週2日以下でよい" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 54,
       "surveyImage": "/data/survey/2.svg"
     },
     {
       "id": 3,
-      "questionText": "社内アンケートで『通勤時間は片道30分以内』と答えた人の割合は？",
+      "surveyQuestion": "Q.通勤時間について",
+      "surveyOptions": [
+        { "key": "A", "label": "片道30分以内" },
+        { "key": "B", "label": "片道30分より長い" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 41,
       "surveyImage": "/data/survey/3.svg"
     },
     {
       "id": 4,
-      "questionText": "社内アンケートで『週に1回以上、社内の人とランチをする』と答えた人の割合は？",
+      "surveyQuestion": "Q.社内ランチについて",
+      "surveyOptions": [
+        { "key": "A", "label": "週に1回以上、社内の人とランチをする" },
+        { "key": "B", "label": "ほとんどしない" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 37,
       "surveyImage": "/data/survey/4.svg"
     },
     {
       "id": 5,
-      "questionText": "社内アンケートで『コーヒーや紅茶を1日2杯以上飲む』と答えた人の割合は？",
+      "surveyQuestion": "Q.飲み物について",
+      "surveyOptions": [
+        { "key": "A", "label": "コーヒーや紅茶を1日2杯以上飲む" },
+        { "key": "B", "label": "ほとんど飲まない" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 73,
       "surveyImage": "/data/survey/5.svg"
     },
     {
       "id": 6,
-      "questionText": "社内アンケートで『休日は家で過ごすことが多い』と答えた人の割合は？",
+      "surveyQuestion": "Q.休日の過ごし方について",
+      "surveyOptions": [
+        { "key": "A", "label": "休日は家で過ごすことが多い" },
+        { "key": "B", "label": "外出することが多い" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 62,
       "surveyImage": "/data/survey/6.svg"
     },
     {
       "id": 7,
-      "questionText": "社内アンケートで『朝型より夜型だ』と答えた人の割合は？",
+      "surveyQuestion": "Q.生活リズムについて",
+      "surveyOptions": [
+        { "key": "A", "label": "朝型より夜型だ" },
+        { "key": "B", "label": "夜型より朝型だ" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 58,
       "surveyImage": "/data/survey/7.svg"
     },
     {
       "id": 8,
-      "questionText": "社内アンケートで『デスクに観葉植物や小物を置いている』と答えた人の割合は？",
+      "surveyQuestion": "Q.デスクまわりについて",
+      "surveyOptions": [
+        { "key": "A", "label": "観葉植物や小物を置いている" },
+        { "key": "B", "label": "特に置いていない" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 29,
       "surveyImage": "/data/survey/8.svg"
     },
     {
       "id": 9,
-      "questionText": "社内アンケートで『社内イベントには積極的に参加したい』と答えた人の割合は？",
+      "surveyQuestion": "Q.社内イベントについて",
+      "surveyOptions": [
+        { "key": "A", "label": "積極的に参加したい" },
+        { "key": "B", "label": "あまり参加したくない" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 46,
       "surveyImage": "/data/survey/9.svg"
     },
     {
       "id": 10,
-      "questionText": "社内アンケートで『仕事終わりに勉強や趣味の時間を取っている』と答えた人の割合は？",
+      "surveyQuestion": "Q.仕事終わりの時間について",
+      "surveyOptions": [
+        { "key": "A", "label": "勉強や趣味の時間を取っている" },
+        { "key": "B", "label": "ほとんど取っていない" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 51,
       "surveyImage": "/data/survey/10.svg"
     }

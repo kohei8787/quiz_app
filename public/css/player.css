@@ -593,13 +593,85 @@ input:disabled {
   color: #111111;
 }
 
-.question-text {
+.question-inner-card {
+  background: #eceff3;
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.question-inner-card:last-of-type {
+  margin-bottom: 12px;
+}
+
+.survey-question-text {
   margin: 0 0 12px;
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  line-height: 1.55;
-  color: var(--player-text);
-  text-align: left;
+  line-height: 1.5;
+  color: #0f766e;
+  text-align: center;
+}
+
+.survey-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.survey-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.survey-option.is-focus {
+  background: rgba(233, 30, 99, 0.08);
+}
+
+.survey-option-label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.option-badge {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.18em;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.survey-option .option-badge {
+  width: 28px;
+  height: 28px;
+  vertical-align: middle;
+}
+
+.question-text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.6;
+  color: #5b21b6;
+  text-align: center;
+}
+
+.question-text .option-badge {
+  margin: 0 0.1em;
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .question-hint {
