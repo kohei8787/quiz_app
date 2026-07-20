@@ -88,6 +88,40 @@ function renderSurveyCard(question) {
       `;
     })
     .join("");
+
+  // 長い選択肢は最大2行に収まるようフォントを縮小（それでも足りなければ折り返して全文表示）
+  requestAnimationFrame(fitSurveyOptionLabels);
+}
+
+function fitSurveyOptionLabels() {
+  const labels = surveyOptionsList.querySelectorAll(".survey-option-label");
+  if (labels.length === 0) {
+    return;
+  }
+
+  const isCols2 = surveyOptionsList.classList.contains("is-cols-2");
+  const maxPx = isCols2 ? 26 : 32;
+  const minPx = isCols2 ? 15 : 17;
+  const maxLines = 2;
+
+  labels.forEach((label) => {
+    label.style.fontSize = "";
+    let size = maxPx;
+    label.style.fontSize = `${size}px`;
+
+    const lineHeightPx = () => {
+      const computed = parseFloat(getComputedStyle(label).lineHeight);
+      if (Number.isFinite(computed) && computed > 0) {
+        return computed;
+      }
+      return size * 1.35;
+    };
+
+    while (size > minPx && label.scrollHeight > lineHeightPx() * maxLines + 1) {
+      size -= 1;
+      label.style.fontSize = `${size}px`;
+    }
+  });
 }
 
 // 結果発表の公開段階（管理者が操作）
@@ -166,6 +200,9 @@ function scheduleFitTeamList() {
 window.addEventListener("resize", () => {
   if (document.body.classList.contains("waiting-background")) {
     scheduleFitTeamList();
+  }
+  if (!surveyCard.hidden) {
+    fitSurveyOptionLabels();
   }
 });
 

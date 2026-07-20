@@ -625,7 +625,7 @@ input:disabled {
 
 .survey-option {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -638,10 +638,14 @@ input:disabled {
 
 .survey-option-label {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 0.9rem;
   font-weight: 700;
   color: #111827;
-  line-height: 1.4;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .option-badge {
@@ -656,6 +660,7 @@ input:disabled {
 .survey-option .option-badge {
   width: 28px;
   height: 28px;
+  margin-top: 0.1em;
   vertical-align: middle;
 }
 

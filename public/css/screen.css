@@ -189,12 +189,21 @@ body.waiting-background #status {
 }
 
 .survey-options.is-cols-2 .survey-option-label {
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  font-size: clamp(1.05rem, 1.8vw, 1.45rem);
+}
+
+.option-badge {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.18em;
+  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .survey-option {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   padding: 10px 18px;
   border-radius: 12px;
@@ -207,24 +216,20 @@ body.waiting-background #status {
 
 .survey-option-label {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: clamp(1.35rem, 2.5vw, 1.85rem);
   font-weight: 700;
   color: #111827;
-  line-height: 1.4;
-}
-
-.option-badge {
-  display: inline-block;
-  width: 1.15em;
-  height: 1.15em;
-  vertical-align: -0.18em;
-  flex-shrink: 0;
-  object-fit: contain;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .survey-option .option-badge {
   width: clamp(40px, 4.5vw, 56px);
   height: clamp(40px, 4.5vw, 56px);
+  margin-top: 0.12em;
   vertical-align: middle;
 }
 
