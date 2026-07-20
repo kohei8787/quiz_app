@@ -68,11 +68,13 @@ function renderSurveyCard(question) {
     surveyCard.hidden = true;
     surveyQuestionText.textContent = "";
     surveyOptionsList.innerHTML = "";
+    surveyOptionsList.classList.remove("is-cols-2");
     return;
   }
 
   surveyCard.hidden = false;
   surveyQuestionText.textContent = question.surveyQuestion;
+  surveyOptionsList.classList.toggle("is-cols-2", options.length >= 3);
   const focusKey = String(question.focusOption || "").toUpperCase();
   surveyOptionsList.innerHTML = options
     .map((option) => {

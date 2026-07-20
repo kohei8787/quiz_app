@@ -27,7 +27,8 @@
       "surveyQuestion": "Q.リモートワークについて",
       "surveyOptions": [
         { "key": "A", "label": "週3日以上希望する" },
-        { "key": "B", "label": "週2日以下でよい" }
+        { "key": "B", "label": "週1〜2日希望する" },
+        { "key": "C", "label": "出社中心でよい" }
       ],
       "focusOption": "A",
       "questionText": "{{A}}と答えた人の割合は何％でしょう？",
@@ -39,7 +40,9 @@
       "surveyQuestion": "Q.通勤時間について",
       "surveyOptions": [
         { "key": "A", "label": "片道30分以内" },
-        { "key": "B", "label": "片道30分より長い" }
+        { "key": "B", "label": "片道30〜60分" },
+        { "key": "C", "label": "片道60〜90分" },
+        { "key": "D", "label": "片道90分より長い" }
       ],
       "focusOption": "A",
       "questionText": "{{A}}と答えた人の割合は何％でしょう？",

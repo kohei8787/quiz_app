@@ -176,6 +176,22 @@ body.waiting-background #status {
   text-align: left;
 }
 
+.survey-options.is-cols-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  width: 100%;
+  gap: 12px 20px;
+}
+
+.survey-options.is-cols-2 .survey-option {
+  min-width: 0;
+}
+
+.survey-options.is-cols-2 .survey-option-label {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+}
+
 .survey-option {
   display: flex;
   align-items: center;
