@@ -143,6 +143,18 @@ body.joined .card {
   min-width: 320px;
 }
 
+.join-welcome-logo {
+  display: block;
+  width: min(72%, 260px);
+  height: auto;
+  margin: 0 auto 20px;
+  flex-shrink: 0;
+}
+
+body.joined .join-welcome-logo {
+  display: none !important;
+}
+
 /* 参加コードと座席番号を1行に並べる（幅比 2:1） */
 #joinSection .row-inputs {
   display: flex;

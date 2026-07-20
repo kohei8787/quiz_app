@@ -26,6 +26,7 @@ const answerIncButton = document.getElementById("answerIncButton");
 const submitAnswerButton = document.getElementById("submitAnswerButton");
 const answerMessage = document.getElementById("answerMessage");
 const joinSection = document.getElementById("joinSection");
+const joinWelcomeLogo = document.getElementById("joinWelcomeLogo");
 const questionView = document.getElementById("questionView");
 const myTeamResult = document.getElementById("myTeamResult");
 const resultView = document.getElementById("resultView");
@@ -450,6 +451,10 @@ socket.on("stateUpdated", (state) => {
   );
 
   joinSection.style.display = showJoinSection ? "block" : "none";
+  if (joinWelcomeLogo) {
+    joinWelcomeLogo.style.display =
+      showJoinSection && !hasJoined ? "block" : "none";
+  }
 
   // 参加後・ waiting / started 中は参加完了画面を表示（編集中は非表示）
   const showJoinedSection =
