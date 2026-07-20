@@ -134,24 +134,39 @@ body.joined .card {
 }
 
 /* 参加フォーム用の特殊スタイル */
+.join-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 80%;
+  min-width: 320px;
+}
+
 #joinSection {
   margin-top: 0;
   padding: 24px 20px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  max-width: 80%;
+  max-width: none;
   width: 100%;
-  min-width: 320px;
+  min-width: 0;
 }
 
 .join-welcome-logo {
   display: block;
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
   width: min(72%, 260px);
   height: auto;
-  margin: 0 auto 20px;
+  margin: 0 0 20px;
+  transform: translateX(-50%);
   flex-shrink: 0;
+  pointer-events: none;
 }
 
-body.joined .join-welcome-logo {
+body.joined .join-stack {
   display: none !important;
 }
 
@@ -200,13 +215,19 @@ select:disabled {
 }
 
 /* 参加後は参加フォームを非表示にする */
-body.joined #joinSection {
+body.joined .join-stack {
   display: none !important;
 }
 
-/* 編集モード時（body.joinedが外される）は参加フォームを表示 */
-body:not(.joined) #joinSection {
-  display: block !important;
+/* 未参加時は参加スタックを表示（カード中央＋ロゴはカード上） */
+body:not(.joined) .join-stack {
+  display: flex !important;
+}
+
+/* ロゴが画面上端で切れないよう上下に余白を確保（カード中央は維持） */
+body:not(.joined) .container {
+  padding-top: 96px;
+  padding-bottom: 96px;
 }
 
 /* チーム情報編集画面 */
@@ -276,8 +297,8 @@ body:not(.joined) #joinSection {
   z-index: 10000;
 }
 
-/* 参加後画面が表示される時、すべてのcardクラスを非表示にする */
-#joinedSection:not([style*="display: none"]) ~ #joinSection,
+/* 参加後画面が表示される時、参加スタック・他カードを非表示にする */
+#joinedSection:not([style*="display: none"]) ~ .join-stack,
 #joinedSection:not([style*="display: none"]) ~ .card {
   display: none !important;
 }
@@ -304,7 +325,7 @@ body:not(.joined) #joinSection {
   display: flex !important;
 }
 
-#joinedSection[style*="display: flex"] ~ #joinSection {
+#joinedSection[style*="display: flex"] ~ .join-stack {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
