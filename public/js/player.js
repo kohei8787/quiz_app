@@ -15,6 +15,9 @@ const joinSectionTitle = document.getElementById("joinSectionTitle");
 const surveyImage = document.getElementById("surveyImage");
 const rankingTitle = document.getElementById("rankingTitle");
 const currentQuestionText = document.getElementById("currentQuestionText");
+const surveyInnerCard = document.getElementById("surveyInnerCard");
+const surveyQuestionText = document.getElementById("surveyQuestionText");
+const surveyOptionsList = document.getElementById("surveyOptionsList");
 const questionProgress = document.getElementById("questionProgress");
 const questionBadgeNum = document.getElementById("questionBadgeNum");
 const questionHint = document.getElementById("questionHint");
@@ -48,6 +51,78 @@ const joinedSection = document.getElementById("joinedSection");
 const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
 const waitingMessage = document.querySelector(".waiting-message");
+
+const OPTION_BADGE_SRC = {
+  A: "/data/image/components/square-a.png",
+  B: "/data/image/components/square-b.png",
+  C: "/data/image/components/square-c.png",
+  D: "/data/image/components/square-d.png"
+};
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function optionBadgeHtml(key) {
+  const normalized = String(key || "").toUpperCase();
+  const src = OPTION_BADGE_SRC[normalized];
+  if (!src) {
+    return escapeHtml(normalized);
+  }
+  return `<img class="option-badge" src="${src}" alt="${escapeHtml(normalized)}" />`;
+}
+
+function formatQuestionHtml(questionText) {
+  const escaped = escapeHtml(questionText || "");
+  return escaped.replace(/\{\{([A-Da-d])\}\}/g, (_, key) => optionBadgeHtml(key));
+}
+
+function renderSurveyCard(question) {
+  const options =
+    question && Array.isArray(question.surveyOptions)
+      ? question.surveyOptions
+      : [];
+  const hasSurvey =
+    question && question.surveyQuestion && options.length > 0;
+
+  if (!hasSurvey) {
+    surveyInnerCard.hidden = true;
+    surveyQuestionText.textContent = "";
+    surveyOptionsList.innerHTML = "";
+    return;
+  }
+
+  surveyInnerCard.hidden = false;
+  surveyQuestionText.textContent = question.surveyQuestion;
+  const focusKey = String(question.focusOption || "").toUpperCase();
+  surveyOptionsList.innerHTML = options
+    .map((option) => {
+      const key = String(option.key || "").toUpperCase();
+      const isFocus = focusKey && key === focusKey;
+      return `
+        <li class="survey-option${isFocus ? " is-focus" : ""}">
+          ${optionBadgeHtml(key)}
+          <span class="survey-option-label">${escapeHtml(option.label || "")}</span>
+        </li>
+      `;
+    })
+    .join("");
+}
+
+function renderQuestionContent(question, fallbackText) {
+  if (question) {
+    renderSurveyCard(question);
+    currentQuestionText.innerHTML = formatQuestionHtml(question.questionText);
+    return;
+  }
+  renderSurveyCard(null);
+  currentQuestionText.textContent = fallbackText;
+}
 const editSection = document.getElementById("editSection");
 const editSectionTitle = document.getElementById("editSectionTitle");
 const editJoinCodeInput = document.getElementById("editJoinCodeInput");
@@ -547,7 +622,7 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "started") {
     statusEl.textContent = "イベント開始。例題または本番の出題を待っています";
     answerArea.style.display = "block";
-    currentQuestionText.textContent = "出題をお待ちください";
+    renderQuestionContent(null, "出題をお待ちください");
     questionBadgeNum.textContent = "第--問";
     questionHint.textContent = "まもなく出題されます";
     answerMessage.textContent = "出題をお待ちください";
@@ -563,9 +638,10 @@ socket.on("stateUpdated", (state) => {
     state.status !== "finished" &&
     state.status !== "results_announced"
   ) {
-    currentQuestionText.textContent = state.currentQuestion
-      ? state.currentQuestion.questionText
-      : "まだ問題は表示されていません";
+    renderQuestionContent(
+      state.currentQuestion,
+      "まだ問題は表示されていません"
+    );
 
     timerValue.textContent = formatRemainingTime(state.remainingTime);
     updateQuestionMeta(state);
@@ -663,7 +739,9 @@ function renderQuestionReview(state) {
       <p class="question-review-meta">あなたの回答: <strong></strong></p>
       <p class="question-review-meta">正解: <strong></strong></p>
     `;
-    li.querySelector(".question-review-text").textContent = entry.questionText || "";
+    li.querySelector(".question-review-text").textContent = String(
+      entry.questionText || ""
+    ).replace(/\{\{([A-Da-d])\}\}/g, "$1");
     li.querySelectorAll(".question-review-meta strong")[0].textContent = answerText;
     li.querySelectorAll(".question-review-meta strong")[1].textContent = correctText;
     questionReviewList.appendChild(li);

@@ -287,7 +287,10 @@ socket.on("stateUpdated", (state) => {
   }
 
   currentQuestionText.textContent = state.currentQuestion
-    ? state.currentQuestion.questionText
+    ? String(state.currentQuestion.questionText || "").replace(
+        /\{\{([A-Da-d])\}\}/g,
+        "$1"
+      )
     : "まだ問題は表示されていません";
 
   answeredCountText.textContent = `回答済み: ${state.answeredCount} / ${state.teams.length}件`;
@@ -303,7 +306,10 @@ socket.on("stateUpdated", (state) => {
   (state.questionList || []).forEach((item, index) => {
     const li = document.createElement("li");
     const num = index + 1;
-    li.textContent = `${num}. ${item.questionText}`;
+    li.textContent = `${num}. ${String(item.questionText || "").replace(
+      /\{\{([A-Da-d])\}\}/g,
+      "$1"
+    )}`;
     if (item.isCurrent) {
       li.className = "question-item-current";
     }

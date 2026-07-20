@@ -119,6 +119,23 @@ function refreshDerivedFields() {
   eventState.answeredCount = Object.keys(eventState.answers).length;
 }
 
+// 画面表示用の問題オブジェクト（正解は含めない）
+function toPublicQuestion(question) {
+  if (!question) {
+    return null;
+  }
+  return {
+    id: question.id,
+    questionText: question.questionText,
+    surveyQuestion: question.surveyQuestion || null,
+    surveyOptions: Array.isArray(question.surveyOptions)
+      ? question.surveyOptions
+      : [],
+    focusOption: question.focusOption || null,
+    surveyImage: question.surveyImage || null
+  };
+}
+
 // 管理者向けの回答状況一覧（座席番号つき）
 function buildAnswerStatus() {
   return eventState.teams.map((team) => ({
@@ -672,11 +689,7 @@ io.on("connection", (socket) => {
     stopTimer();
     eventState.isPractice = true;
     eventState.currentQuestionIndex = -1;
-    eventState.currentQuestion = {
-      id: practiceQuestion.id,
-      questionText: practiceQuestion.questionText,
-      surveyImage: null
-    };
+    eventState.currentQuestion = toPublicQuestion(practiceQuestion);
     eventState.currentQuestionId = practiceQuestion.id;
     eventState.surveyImageUrl = null;
     eventState.status = "question";
@@ -724,11 +737,7 @@ io.on("connection", (socket) => {
 
     eventState.isPractice = false;
     eventState.currentQuestionIndex = nextIndex;
-    eventState.currentQuestion = {
-      id: question.id,
-      questionText: question.questionText,
-      surveyImage: question.surveyImage || null
-    };
+    eventState.currentQuestion = toPublicQuestion(question);
     eventState.currentQuestionId = question.id;
     eventState.surveyImageUrl = null;
     eventState.status = "question";
