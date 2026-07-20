@@ -9,39 +9,54 @@
   <link rel="stylesheet" href="/css/player.css" />
 </head>
 <body>
+  <div class="background-layer" aria-hidden="true">
+    <img class="background-image background-image-default" src="/data/image/background/background-back_cropped.png" alt="" />
+    <img class="background-image background-image-results" src="/data/image/background/background-side.png" alt="" />
+  </div>
+
   <main class="container">
     <!-- 現在の状態を表示する場所 -->
     <p id="status" style="display: none;">接続中...</p>
 
-    <!-- 参加受付中に表示するエリア -->
-    <div id="joinSection" class="card">
-      <h2 id="joinSectionTitle">チーム参加</h2>
+    <!-- 参加画面：ロゴ＋カードをまとめて画面中央に配置 -->
+    <div id="joinStack" class="join-stack">
+      <img
+        id="joinWelcomeLogo"
+        class="join-welcome-logo"
+        src="/data/image/components/welcome_logo_mono.png"
+        alt="Welcome"
+      />
 
-      <!-- 管理者が指定した参加コードと座席番号を1行に並べる -->
-      <div class="row-inputs">
-        <!-- 参加コード（幅比 2:1） -->
-        <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
+      <!-- 参加受付中に表示するエリア -->
+      <div id="joinSection" class="card">
+        <h2 id="joinSectionTitle">チーム参加</h2>
 
-        <!-- 座席番号プルダウン（幅比 2:1） -->
-        <select id="seatNumberInput" aria-label="座席番号を選択">
-          <option value="">座席番号</option>
-        </select>
+        <!-- 管理者が指定した参加コードと座席番号を1行に並べる -->
+        <div class="row-inputs">
+          <!-- 参加コード（幅比 2:1） -->
+          <input id="joinCodeInput" type="text" placeholder="参加コードを入力" autocomplete="off" />
+
+          <!-- 座席番号プルダウン（幅比 2:1） -->
+          <select id="seatNumberInput" aria-label="座席番号を選択">
+            <option value="">座席番号</option>
+          </select>
+        </div>
+
+        <!-- チーム名入力欄 -->
+        <input id="teamNameInput" type="text" placeholder="チーム名を入力" />
+
+        <!-- 未参加時の参加ボタン -->
+        <button id="joinButton" type="button">クイズに参加する</button>
+
+        <!-- 編集モード時の決定・キャンセル -->
+        <div id="teamEditActions" style="display: none;">
+          <button id="confirmTeamButton" type="button">決定</button>
+          <button id="cancelTeamButton" type="button">キャンセル</button>
+        </div>
+
+        <!-- 参加・更新結果メッセージ -->
+        <p id="joinMessage"></p>
       </div>
-
-      <!-- チーム名入力欄 -->
-      <input id="teamNameInput" type="text" placeholder="チーム名を入力" />
-
-      <!-- 未参加時の参加ボタン -->
-      <button id="joinButton" type="button">クイズに参加する</button>
-
-      <!-- 編集モード時の決定・キャンセル -->
-      <div id="teamEditActions" style="display: none;">
-        <button id="confirmTeamButton" type="button">決定</button>
-        <button id="cancelTeamButton" type="button">キャンセル</button>
-      </div>
-
-      <!-- 参加・更新結果メッセージ -->
-      <p id="joinMessage"></p>
     </div>
 
     <!-- 参加後の画面 -->
@@ -114,7 +129,7 @@
 
       <!-- 回答入力エリア -->
       <section id="answerArea" class="card answer-card" style="display: none;">
-        <h2 class="answer-title">あなたの回答</h2>
+        <h2 class="answer-title">ANSWER</h2>
         <div class="answer-stepper">
           <button id="answerDecButton" type="button" class="stepper-btn" aria-label="1減らす">
             <span aria-hidden="true">&#9660;</span>
@@ -178,7 +193,6 @@
     <!-- 結果発表（1〜3位セレモニー） -->
     <div id="resultsView" class="card results-view" style="display: none;">
       <h2>結果発表</h2>
-      <p id="resultsSubtitle" class="results-subtitle">上位表彰</p>
       <div id="podium" class="podium" aria-live="polite"></div>
     </div>
   </main>

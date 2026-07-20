@@ -203,13 +203,23 @@ function renderPodium(state, shouldShow) {
     const item = document.createElement("div");
     item.className = `podium-place podium-place--${place}`;
 
+    const crownHtml =
+      place === 1
+        ? `<span class="podium-crown" aria-hidden="true">👑</span>`
+        : "";
+
     if (!revealedPlaces.has(place)) {
       item.classList.add("podium-place--hidden");
       item.innerHTML = `
+        ${crownHtml}
         <p class="podium-name">？</p>
         <p class="podium-score">--</p>
         <div class="podium-block">
-          <span class="podium-rank">${place}</span>
+          <div class="podium-face podium-face--top" aria-hidden="true"></div>
+          <div class="podium-face podium-face--front">
+            <span class="podium-rank">${place}</span>
+          </div>
+          <div class="podium-face podium-face--side" aria-hidden="true"></div>
         </div>
       `;
       podium.appendChild(item);
@@ -217,10 +227,15 @@ function renderPodium(state, shouldShow) {
     }
 
     item.innerHTML = `
+      ${crownHtml}
       <p class="podium-name"></p>
       <p class="podium-score"></p>
       <div class="podium-block">
-        <span class="podium-rank">${place}</span>
+        <div class="podium-face podium-face--top" aria-hidden="true"></div>
+        <div class="podium-face podium-face--front">
+          <span class="podium-rank">${place}</span>
+        </div>
+        <div class="podium-face podium-face--side" aria-hidden="true"></div>
       </div>
     `;
     item.querySelector(".podium-name").textContent = team.name;

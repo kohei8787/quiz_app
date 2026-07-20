@@ -26,6 +26,8 @@ const answerIncButton = document.getElementById("answerIncButton");
 const submitAnswerButton = document.getElementById("submitAnswerButton");
 const answerMessage = document.getElementById("answerMessage");
 const joinSection = document.getElementById("joinSection");
+const joinStack = document.getElementById("joinStack");
+const joinWelcomeLogo = document.getElementById("joinWelcomeLogo");
 const questionView = document.getElementById("questionView");
 const myTeamResult = document.getElementById("myTeamResult");
 const resultView = document.getElementById("resultView");
@@ -412,6 +414,7 @@ socket.on("stateUpdated", (state) => {
       state.status !== "results_announced") ||
     (hasJoined && state.status === "waiting");
   const showQuestionView =
+    state.status === "started" ||
     state.status === "question" ||
     state.status === "answer_closed";
   const showResultView =
@@ -433,6 +436,7 @@ socket.on("stateUpdated", (state) => {
 
   // 出題〜順位発表までは背景をグラデーションにする
   const useGradientBackground =
+    state.status === "started" ||
     state.status === "question" ||
     state.status === "answer_closed" ||
     state.status === "answers_revealed" ||
@@ -441,12 +445,25 @@ socket.on("stateUpdated", (state) => {
     state.status === "ranking_revealed";
   document.body.classList.toggle("event-gradient-bg", useGradientBackground);
 
+  // 結果発表中はサイド背景に切り替える
+  document.body.classList.toggle(
+    "results-background-side",
+    state.status === "results_announced"
+  );
+
+  const showJoinStack = showJoinSection && !hasJoined;
+  if (joinStack) {
+    joinStack.style.display = showJoinStack ? "flex" : "none";
+  }
   joinSection.style.display = showJoinSection ? "block" : "none";
+  if (joinWelcomeLogo) {
+    joinWelcomeLogo.style.display = showJoinStack ? "block" : "none";
+  }
 
   // 参加後・ waiting / started 中は参加完了画面を表示（編集中は非表示）
   const showJoinedSection =
     hasJoined &&
-    (state.status === "waiting" || state.status === "started") &&
+    state.status === "waiting" &&
     !isEditingTeamInfo;
   joinedSection.style.display = showJoinedSection ? "flex" : "none";
 
@@ -459,7 +476,7 @@ socket.on("stateUpdated", (state) => {
   if (waitingMessage) {
     waitingMessage.textContent =
       state.status === "started"
-        ? "出題をお持ちください..."
+        ? "出題をお待ちください..."
         : "開始をお待ちください...";
   }
 
@@ -529,7 +546,12 @@ socket.on("stateUpdated", (state) => {
     rankingTitle.textContent = "最終順位";
   } else if (state.status === "started") {
     statusEl.textContent = "イベント開始。例題または本番の出題を待っています";
-    answerArea.style.display = "none";
+    answerArea.style.display = "block";
+    currentQuestionText.textContent = "出題をお待ちください";
+    questionBadgeNum.textContent = "第--問";
+    questionHint.textContent = "まもなく出題されます";
+    answerMessage.textContent = "出題をお待ちください";
+    setAnswerControlsEnabled(false);
   } else if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
     answerArea.style.display = "none";
@@ -537,6 +559,7 @@ socket.on("stateUpdated", (state) => {
 
   if (
     state.status !== "waiting" &&
+    state.status !== "started" &&
     state.status !== "finished" &&
     state.status !== "results_announced"
   ) {
@@ -561,7 +584,9 @@ socket.on("stateUpdated", (state) => {
   scoreText.textContent = myTeam
     ? `スコア： ${myTeam.score} pt`
     : "スコア： -- pt";
-  questionProgress.textContent = scoreText.textContent;
+  if (questionProgress) {
+    questionProgress.textContent = scoreText.textContent;
+  }
 
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
@@ -682,8 +707,14 @@ function renderPodium(state, shouldShow) {
     return;
   }
 
-  // 見た目の並び: 2位 | 1位 | 3位（未公開の枠はプレースホルダ）
-  const displayOrder = [1, 0, 2].filter((index) => index < topTeams.length);
+  // 見た目の並び: 2位 | 1位 | 3位（未公開の順位は描画しない）
+  const displayOrder = [1, 0, 2].filter((index) => {
+    if (index >= topTeams.length) {
+      return false;
+    }
+    const place = index + 1;
+    return revealedPlaces.has(place);
+  });
 
   displayOrder.forEach((rankIndex) => {
     const team = topTeams[rankIndex];
@@ -691,24 +722,21 @@ function renderPodium(state, shouldShow) {
     const item = document.createElement("div");
     item.className = `podium-place podium-place--${place}`;
 
-    if (!revealedPlaces.has(place)) {
-      item.classList.add("podium-place--hidden");
-      item.innerHTML = `
-        <p class="podium-name">？</p>
-        <p class="podium-score">--</p>
-        <div class="podium-block">
-          <span class="podium-rank">${place}</span>
-        </div>
-      `;
-      podium.appendChild(item);
-      return;
-    }
+    const crownHtml =
+      place === 1
+        ? `<span class="podium-crown" aria-hidden="true">👑</span>`
+        : "";
 
     item.innerHTML = `
+      ${crownHtml}
       <p class="podium-name"></p>
       <p class="podium-score"></p>
       <div class="podium-block">
-        <span class="podium-rank">${place}</span>
+        <div class="podium-face podium-face--top" aria-hidden="true"></div>
+        <div class="podium-face podium-face--front">
+          <span class="podium-rank">${place}</span>
+        </div>
+        <div class="podium-face podium-face--side" aria-hidden="true"></div>
       </div>
     `;
     item.querySelector(".podium-name").textContent = team.name;
@@ -727,7 +755,7 @@ function renderPodium(state, shouldShow) {
 
   // 今回新しく公開された順位だけアニメーション
   requestAnimationFrame(() => {
-    podium.querySelectorAll(".podium-place:not(.podium-place--hidden)").forEach((el) => {
+    podium.querySelectorAll(".podium-place").forEach((el) => {
       if (!el.classList.contains("is-visible")) {
         el.classList.add("is-visible");
       }
