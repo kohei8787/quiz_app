@@ -27,7 +27,7 @@ body {
 }
 
 .background-image {
-  display: block;
+  display: none;
   width: 100%;
   height: auto;
   flex: 0 0 auto;
@@ -40,6 +40,23 @@ body.waiting-background {
 
 body.waiting-background .background-layer {
   display: flex;
+}
+
+body.waiting-background .background-image-waiting {
+  display: block;
+}
+
+/* 出題〜結果発表はサイド背景を表示 */
+body.event-background {
+  background-color: #c8ddd4;
+}
+
+body.event-background .background-layer {
+  display: flex;
+}
+
+body.event-background .background-image-event {
+  display: block;
 }
 
 /* 参加受付中：下1/4を空け、カードは残り領域で一定サイズ */

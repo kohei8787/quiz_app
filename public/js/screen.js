@@ -150,8 +150,18 @@ socket.on("stateUpdated", (state) => {
   resultsView.style.display = showResultsView ? "block" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
 
-  // 参加受付中は背景画像（下端合わせ）を表示
+  // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
+  const useEventBackground =
+    state.status === "started" ||
+    state.status === "question" ||
+    state.status === "answer_closed" ||
+    state.status === "answers_revealed" ||
+    state.status === "correct_revealed" ||
+    state.status === "survey_results" ||
+    state.status === "ranking_revealed" ||
+    state.status === "results_announced";
   document.body.classList.toggle("waiting-background", showWaiting);
+  document.body.classList.toggle("event-background", useEventBackground);
 
   if (showWaiting) {
     scheduleFitTeamList();
