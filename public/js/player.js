@@ -565,10 +565,22 @@ socket.on("stateUpdated", (state) => {
 
   // 参加後画面の案内文言
   if (waitingMessage) {
-    waitingMessage.textContent =
-      state.status === "started"
-        ? "出題をお待ちください..."
-        : "開始をお待ちください...";
+    if (state.status === "started") {
+      waitingMessage.classList.remove("waiting-cutout");
+      waitingMessage.textContent = "出題をお待ちください...";
+    } else {
+      waitingMessage.classList.add("waiting-cutout");
+      waitingMessage.innerHTML = `
+        <svg class="waiting-cutout-svg" viewBox="0 0 144 32" role="img" aria-label="開始待ち" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <mask id="waitingCutoutMask">
+              <rect x="0" y="0" width="144" height="32" rx="16" ry="16" fill="white"></rect>
+              <text x="72" y="16" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="700" font-family="'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif" fill="black">● 開始待ち</text>
+            </mask>
+          </defs>
+          <rect x="0" y="0" width="144" height="32" rx="16" ry="16" fill="#000000" mask="url(#waitingCutoutMask)"></rect>
+        </svg>`;
+    }
   }
 
   questionView.style.display = showQuestionView ? "block" : "none";
