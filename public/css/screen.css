@@ -272,12 +272,14 @@ body {
 }
 
 .podium {
+  --podium-depth-x: clamp(14px, 2.4vw, 28px);
+  --podium-depth-y: clamp(11px, 1.8vw, 22px);
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 20px;
+  gap: clamp(12px, 2.5vw, 28px);
   min-height: 420px;
-  padding: 12px 0 8px;
+  padding: 12px clamp(8px, 2vw, 20px) 8px 0;
 }
 
 .podium-empty {
@@ -287,11 +289,20 @@ body {
 }
 
 .podium-place {
-  flex: 1;
-  max-width: 240px;
-  text-align: center;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 260px;
   opacity: 0;
   transform: translateY(64px) scale(0.9);
+}
+
+.podium-crown {
+  display: block;
+  margin: 0 auto 6px;
+  font-size: clamp(2.8rem, 6vw, 4.2rem);
+  line-height: 1;
+  text-align: center;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
 }
 
 .podium-place.is-visible {
@@ -303,61 +314,128 @@ body {
   transform: none;
 }
 
-.podium-place--hidden .podium-name,
-.podium-place--hidden .podium-score {
-  color: #64748b;
-}
-
 .podium-place--hidden .podium-block {
   filter: grayscale(0.45);
   opacity: 0.65;
 }
 
-.podium-name {
-  margin: 0 0 8px;
-  font-size: clamp(1.4rem, 2.8vw, 2.2rem);
-  font-weight: 700;
-  color: #f8fafc;
-  word-break: break-word;
-  line-height: 1.3;
+.podium-place--hidden .podium-name {
+  color: #94a3b8;
 }
 
-.podium-score {
-  margin: 0 0 14px;
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
-  color: #cbd5e1;
+.podium-place--hidden .podium-score {
+  color: #60a5fa;
 }
 
+/* 立体直方体（上面・正面・右側面） */
 .podium-block {
+  --podium-height: 170px;
+  --face-front: #94a3b8;
+  --face-top: #cbd5e1;
+  --face-side: #64748b;
+  position: relative;
+  width: calc(100% - var(--podium-depth-x));
+  height: var(--podium-height);
+  margin-top: var(--podium-depth-y);
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.28));
+}
+
+.podium-face {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.podium-face--front {
+  z-index: 2;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px 14px 6px 6px;
+  padding: clamp(10px, 1.6vw, 18px) clamp(8px, 1.4vw, 16px);
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: linear-gradient(180deg, var(--face-front) 0%, color-mix(in srgb, var(--face-front) 72%, #000) 100%);
   color: #fff;
-  font-weight: 800;
+  text-align: center;
+}
+
+.podium-face--top {
+  z-index: 3;
+  left: 0;
+  top: calc(-1 * var(--podium-depth-y));
+  width: calc(100% + var(--podium-depth-x));
+  height: var(--podium-depth-y);
+  background: linear-gradient(135deg, var(--face-top) 0%, color-mix(in srgb, var(--face-top) 80%, #000) 100%);
+  clip-path: polygon(
+    0 100%,
+    var(--podium-depth-x) 0,
+    100% 0,
+    calc(100% - var(--podium-depth-x)) 100%
+  );
+}
+
+.podium-face--side {
+  z-index: 1;
+  top: calc(-1 * var(--podium-depth-y));
+  left: 100%;
+  width: var(--podium-depth-x);
+  height: calc(100% + var(--podium-depth-y));
+  background: linear-gradient(180deg, var(--face-side) 0%, color-mix(in srgb, var(--face-side) 70%, #000) 100%);
+  clip-path: polygon(
+    0 var(--podium-depth-y),
+    100% 0,
+    100% calc(100% - var(--podium-depth-y)),
+    0 100%
+  );
 }
 
 .podium-rank {
-  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-weight: 800;
   line-height: 1;
 }
 
+.podium-name {
+  margin: 0 0 4px;
+  max-width: 100%;
+  font-size: clamp(1.5rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f172a;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.podium-score {
+  margin: 0 0 10px;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #2563eb;
+  text-align: center;
+}
+
 .podium-place--1 .podium-block {
-  height: 220px;
-  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
-  box-shadow: 0 16px 36px rgba(251, 191, 36, 0.28);
+  --podium-height: clamp(180px, 28vw, 240px);
+  --face-front: #fbbf24;
+  --face-top: #fde68a;
+  --face-side: #b45309;
 }
 
 .podium-place--2 .podium-block {
-  height: 170px;
-  background: linear-gradient(180deg, #cbd5e1 0%, #64748b 100%);
-  box-shadow: 0 14px 30px rgba(148, 163, 184, 0.22);
+  --podium-height: clamp(140px, 22vw, 186px);
+  --face-front: #cbd5e1;
+  --face-top: #f1f5f9;
+  --face-side: #475569;
 }
 
 .podium-place--3 .podium-block {
-  height: 130px;
-  background: linear-gradient(180deg, #fdba74 0%, #c2410c 100%);
-  box-shadow: 0 12px 26px rgba(194, 65, 12, 0.22);
+  --podium-height: clamp(110px, 17vw, 146px);
+  --face-front: #fdba74;
+  --face-top: #fed7aa;
+  --face-side: #9a3412;
 }
 
 @keyframes podiumRise {
@@ -388,5 +466,21 @@ body {
 
   .card {
     padding: 24px 16px;
+  }
+
+  .podium {
+    --podium-depth-x: 12px;
+    --podium-depth-y: 10px;
+    gap: 10px;
+    min-height: 300px;
+  }
+
+  .podium-place {
+    max-width: none;
+  }
+
+  .podium-face--front {
+    gap: 4px;
+    padding: 10px 6px;
   }
 }
