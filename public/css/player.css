@@ -47,6 +47,20 @@ body {
   display: none;
 }
 
+.background-video {
+  display: none;
+  width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.background-video {
+  display: none;
+  width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+}
+
 /* 出題〜順位発表はグラデーション背景 */
 body.event-gradient-bg {
   background: linear-gradient(180deg, #68f15b 0%, #f0ea3c 100%);
@@ -68,6 +82,36 @@ body.results-background-side .background-image-default {
 
 body.results-background-side .background-image-results {
   display: block;
+}
+
+/* 終了画面は動画背景のみを表示 */
+body.finished-background-video {
+  background-color: #eef1f6;
+}
+
+body.finished-background-video .background-image-default,
+body.finished-background-video .background-image-results {
+  display: none;
+}
+
+body.finished-background-video .background-video-finished {
+  display: block;
+}
+
+/* 終了画面のカードは画面下1/4を空けて、カード内だけスクロールさせる */
+body.finished-background-video .container {
+  justify-content: flex-start;
+  padding-top: 0;
+  padding-bottom: calc(30dvh + env(safe-area-inset-bottom));
+}
+
+body.finished-background-video #rankingView {
+  margin-top: 0;
+  background: rgba(255, 255, 255, 0.7);
+  max-height: calc(70dvh - 32px - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* メインコンテンツの幅と中央寄せ（スマホ向け） */

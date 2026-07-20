@@ -51,6 +51,7 @@ const joinedSection = document.getElementById("joinedSection");
 const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
 const waitingMessage = document.querySelector(".waiting-message");
+const backgroundVideo = document.querySelector(".background-video-finished");
 
 const OPTION_BADGE_SRC = {
   A: "/data/image/components/square-a.png",
@@ -525,6 +526,21 @@ socket.on("stateUpdated", (state) => {
     "results-background-side",
     state.status === "results_announced"
   );
+
+  const useFinishedBackgroundVideo = state.status === "finished";
+  document.body.classList.toggle(
+    "finished-background-video",
+    useFinishedBackgroundVideo
+  );
+  if (backgroundVideo) {
+    if (useFinishedBackgroundVideo) {
+      backgroundVideo.currentTime = 0;
+      backgroundVideo.play().catch(() => {});
+    } else {
+      backgroundVideo.pause();
+      backgroundVideo.currentTime = 0;
+    }
+  }
 
   const showJoinStack = showJoinSection && !hasJoined;
   if (joinStack) {
