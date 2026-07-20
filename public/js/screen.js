@@ -5,7 +5,8 @@ const socket = io();
 const statusEl = document.getElementById("status");
 const teamList = document.getElementById("teamList");
 const currentQuestionText = document.getElementById("currentQuestionText");
-const timerText = document.getElementById("timerText");
+const questionTitle = document.getElementById("questionTitle");
+const timerValue = document.getElementById("timerValue");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const gaugeContainer = document.getElementById("gaugeContainer");
 const rankingList = document.getElementById("rankingList");
@@ -209,13 +210,12 @@ window.addEventListener("resize", () => {
 // 残り時間を mm:ss 形式の文字列にする
 function formatRemainingTime(seconds) {
   if (typeof seconds !== "number") {
-    return "残り時間: --:--";
+    return "--:--";
   }
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const mm = String(mins).padStart(2, "0");
-  const ss = String(secs).padStart(2, "0");
-  return `残り時間: ${mm}:${ss}`;
+  const totalSeconds = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
 socket.on("connect", () => {
@@ -254,6 +254,8 @@ socket.on("stateUpdated", (state) => {
   rankingView.style.display = showRankingView ? "block" : "none";
   resultsView.style.display = showResultsView ? "block" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
+  // 出題中はヘッダー内に「第n問」とタイマーを出すため、上部statusは隠す
+  statusEl.style.display = showQuestionView ? "none" : "";
 
   // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
   const useEventBackground =
@@ -280,13 +282,15 @@ socket.on("stateUpdated", (state) => {
     statusEl.textContent = "参加受付中";
     currentQuestionText.textContent = "出題を待っています";
     renderSurveyCard(null);
-    timerText.textContent = "残り時間: --:--";
+    questionTitle.textContent = "出題待ち";
+    timerValue.textContent = "--:--";
     correctAnswerText.textContent = "正解: --";
     gaugeContainer.innerHTML = "";
   } else if (state.status === "question" || state.status === "answer_closed") {
-    statusEl.textContent = state.isPractice
+    questionTitle.textContent = state.isPractice
       ? "例題"
       : `第${(state.currentQuestionIndex ?? -1) + 1}問`;
+    statusEl.textContent = questionTitle.textContent;
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "回答公開";
   } else if (state.status === "correct_revealed") {
@@ -300,6 +304,9 @@ socket.on("stateUpdated", (state) => {
     statusEl.textContent = "結果発表";
   } else if (state.status === "finished") {
     statusEl.textContent = "イベント終了";
+  } else if (state.status === "started") {
+    statusEl.textContent = "イベント進行中";
+    questionTitle.textContent = "出題待ち";
   } else {
     statusEl.textContent = "イベント進行中";
   }
@@ -319,7 +326,7 @@ socket.on("stateUpdated", (state) => {
       currentQuestionText.textContent = "出題を待っています";
     }
 
-    timerText.textContent = formatRemainingTime(state.remainingTime);
+    timerValue.textContent = formatRemainingTime(state.remainingTime);
 
     // 例題では正解を表示しない
     if (state.isPractice) {
