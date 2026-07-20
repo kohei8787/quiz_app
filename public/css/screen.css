@@ -12,8 +12,68 @@ body {
   color: #f8fafc;
 }
 
+/* 固定背景レイヤー（幅合わせ・下端合わせ／player と同様） */
+.background-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.background-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+/* 参加受付中は背景画像を表示 */
+body.waiting-background {
+  background-color: #0d3d28;
+}
+
+body.waiting-background .background-layer {
+  display: flex;
+}
+
+/* 参加受付中：下1/4を空け、カードは残り領域で一定サイズ */
+body.waiting-background .container {
+  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 40px 0;
+  padding-bottom: 25vh;
+  box-sizing: border-box;
+}
+
+body.waiting-background #status {
+  flex: 0 0 auto;
+}
+
+#waitingSection.card {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 /* フル幅の投影コンテナ */
 .container {
+  position: relative;
+  z-index: 1;
   max-width: 1400px;
   width: min(100%, 1400px);
   margin: 0 auto;
@@ -22,19 +82,11 @@ body {
   box-sizing: border-box;
 }
 
-/* 上部の小さなラベル（邪魔にならないサイズ） */
-.screen-brand {
-  margin: 0 0 8px;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
-  font-weight: normal;
-}
-
 #status {
   margin: 0 0 28px;
-  font-size: 1.25rem;
-  color: #cbd5e1;
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  font-weight: 700;
+  color: #f8fafc;
 }
 
 /* メイン表示ブロック */
@@ -80,27 +132,49 @@ body {
 }
 
 #resultTitle,
-#rankingTitle,
-#waitingTitle {
+#rankingTitle {
   font-size: clamp(2rem, 3.5vw, 2.8rem);
 }
 
-/* 参加チーム一覧（待機画面） */
+/* 参加チーム一覧（待機画面）※スクロールなし・カード内にフィット */
 #teamList {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  text-align: left;
+  gap: var(--team-gap, 12px);
+  text-align: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  align-content: start;
+  justify-content: stretch;
 }
 
 #teamList li {
-  padding: 16px 20px;
-  background: #1e293b;
-  border-radius: 12px;
-  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--team-pad-y, 16px) var(--team-pad-x, 20px);
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: var(--team-radius, 12px);
+  font-size: var(--team-font, 1.4rem);
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#teamList li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
 }
 
 /*

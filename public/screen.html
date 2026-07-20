@@ -8,18 +8,21 @@
   <!-- スクリーン表示画面専用のCSS（プロジェクター向け大画面） -->
   <link rel="stylesheet" href="/css/screen.css" />
 </head>
-<body>
-  <main class="container">
-    <!-- 控えめな画面ラベル -->
-    <p class="screen-brand">リアルタイムクイズ</p>
+<body class="waiting-background">
+  <div class="background-layer" aria-hidden="true">
+    <img
+      class="background-image background-image-waiting"
+      src="/data/image/background/screen_bg_back.png"
+      alt=""
+    />
+  </div>
 
+  <main class="container">
     <!-- 現在の状態を表示する場所 -->
     <p id="status">接続中...</p>
 
     <!-- 参加受付中に表示するエリア -->
     <div id="waitingSection" class="card">
-      <h2 id="waitingTitle">参加受付中</h2>
-
       <!-- 参加済みチーム一覧 -->
       <ul id="teamList"></ul>
     </div>
@@ -75,6 +78,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=10"></script>
+  <script src="/js/screen.js?v=16"></script>
 </body>
 </html>

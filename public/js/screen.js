@@ -4,7 +4,6 @@ const socket = io();
 // 画面要素を取得
 const statusEl = document.getElementById("status");
 const teamList = document.getElementById("teamList");
-const waitingTitle = document.getElementById("waitingTitle");
 const currentQuestionText = document.getElementById("currentQuestionText");
 const timerText = document.getElementById("timerText");
 const correctAnswerText = document.getElementById("correctAnswerText");
@@ -25,6 +24,82 @@ const surveyImage = document.getElementById("surveyImage");
 
 // 結果発表の公開段階（管理者が操作）
 let lastResultsRevealStep = -1;
+
+// 参加チーム一覧をカード内に収める（スクロールなし）
+// 22px 時にちょうどよい余白になるセル高さ上限＋上詰め
+const TEAM_MAX_FONT_PX = 22;
+const TEAM_MAX_CELL_H = 72;
+
+function fitTeamListToCard() {
+  const items = teamList.children;
+  const count = items.length;
+  if (count === 0 || waitingSection.style.display === "none") {
+    return;
+  }
+
+  const width = teamList.clientWidth;
+  const height = teamList.clientHeight;
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  let best = null;
+  for (let cols = 1; cols <= count; cols += 1) {
+    const rows = Math.ceil(count / cols);
+    const gap = Math.max(4, Math.min(12, Math.floor(Math.min(width, height) / 40)));
+    const cellW = (width - gap * (cols - 1)) / cols;
+    const cellH = Math.min(TEAM_MAX_CELL_H, (height - gap * (rows - 1)) / rows);
+    if (cellW < 64 || cellH < 24) {
+      continue;
+    }
+    // 読みやすさ優先：セル面積と短い辺のバランスで評価
+    const score = Math.min(cellW, cellH * 2.2) * Math.min(cellW, cellH);
+    if (!best || score > best.score) {
+      best = { cols, rows, gap, cellW, cellH, score };
+    }
+  }
+
+  if (!best) {
+    best = {
+      cols: Math.max(1, count),
+      rows: 1,
+      gap: 4,
+      cellW: width / Math.max(1, count),
+      cellH: Math.min(TEAM_MAX_CELL_H, height),
+      score: 0
+    };
+  }
+
+  const fontPx = Math.max(
+    10,
+    Math.min(TEAM_MAX_FONT_PX, best.cellH * 0.38, best.cellW * 0.14)
+  );
+  const padY = Math.max(2, Math.min(16, best.cellH * 0.16));
+  const padX = Math.max(6, Math.min(20, best.cellW * 0.08));
+  const radius = Math.max(6, Math.min(12, Math.min(best.cellH, best.cellW) * 0.12));
+
+  teamList.style.gridTemplateColumns = `repeat(${best.cols}, minmax(0, 1fr))`;
+  teamList.style.gridTemplateRows = `repeat(${best.rows}, minmax(0, ${TEAM_MAX_CELL_H}px))`;
+  teamList.style.justifyContent = "stretch";
+  teamList.style.alignContent = "start";
+  teamList.style.setProperty("--team-gap", `${best.gap}px`);
+  teamList.style.setProperty("--team-font", `${fontPx}px`);
+  teamList.style.setProperty("--team-pad-y", `${padY}px`);
+  teamList.style.setProperty("--team-pad-x", `${padX}px`);
+  teamList.style.setProperty("--team-radius", `${radius}px`);
+}
+
+function scheduleFitTeamList() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(fitTeamListToCard);
+  });
+}
+
+window.addEventListener("resize", () => {
+  if (document.body.classList.contains("waiting-background")) {
+    scheduleFitTeamList();
+  }
+});
 
 // 残り時間を mm:ss 形式の文字列にする
 function formatRemainingTime(seconds) {
@@ -48,7 +123,9 @@ socket.on("stateUpdated", (state) => {
   teamList.innerHTML = "";
   state.teams.forEach((team) => {
     const li = document.createElement("li");
-    li.textContent = team.name;
+    const name = document.createElement("span");
+    name.textContent = team.name;
+    li.appendChild(name);
     teamList.appendChild(li);
   });
 
@@ -65,7 +142,7 @@ socket.on("stateUpdated", (state) => {
   // イベント終了：参加受付ではなくお礼画面を表示
   const showFinishedView = state.status === "finished";
 
-  waitingSection.style.display = showWaiting ? "block" : "none";
+  waitingSection.style.display = showWaiting ? "flex" : "none";
   questionView.style.display = showQuestionView ? "block" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
@@ -73,13 +150,19 @@ socket.on("stateUpdated", (state) => {
   resultsView.style.display = showResultsView ? "block" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
 
+  // 参加受付中は背景画像（下端合わせ）を表示
+  document.body.classList.toggle("waiting-background", showWaiting);
+
+  if (showWaiting) {
+    scheduleFitTeamList();
+  }
+
   if (state.surveyImageUrl) {
     surveyImage.src = state.surveyImageUrl;
   }
 
   if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
-    waitingTitle.textContent = "参加受付中";
     currentQuestionText.textContent = "出題を待っています";
     timerText.textContent = "残り時間: --:--";
     correctAnswerText.textContent = "正解: --";
