@@ -32,7 +32,6 @@ const joinSection = document.getElementById("joinSection");
 const joinStack = document.getElementById("joinStack");
 const joinWelcomeLogo = document.getElementById("joinWelcomeLogo");
 const questionView = document.getElementById("questionView");
-const myTeamResult = document.getElementById("myTeamResult");
 const resultView = document.getElementById("resultView");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
@@ -43,10 +42,13 @@ const questionReviewList = document.getElementById("questionReviewList");
 const resultsView = document.getElementById("resultsView");
 const podium = document.getElementById("podium");
 const timerValue = document.getElementById("timerValue");
-const correctAnswerText = document.getElementById("correctAnswerText");
 const scoreText = document.getElementById("scoreText");
 const gaugeContainer = document.getElementById("gaugeContainer");
-const resultTitle = document.getElementById("resultTitle");
+const revealedAnswersList = document.getElementById("revealedAnswersList");
+const summaryMyAnswer = document.getElementById("summaryMyAnswer");
+const summaryCorrect = document.getElementById("summaryCorrect");
+const summaryScore = document.getElementById("summaryScore");
+const summaryCurrentScore = document.getElementById("summaryCurrentScore");
 const joinedSection = document.getElementById("joinedSection");
 const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
@@ -479,8 +481,6 @@ socket.on("stateUpdated", (state) => {
     setAnswerValue(50);
     setAnswerControlsEnabled(true);
     gaugeContainer.innerHTML = "";
-    myTeamResult.style.display = "none";
-    myTeamResult.textContent = "";
   }
 
   const showJoinSection =
@@ -626,13 +626,9 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "全チームの回答を表示中";
     answerArea.style.display = "none";
-    resultTitle.textContent = "回答公開";
-    myTeamResult.style.display = "none";
   } else if (state.status === "correct_revealed") {
     statusEl.textContent = "正解発表中";
     answerArea.style.display = "none";
-    resultTitle.textContent = "正解発表";
-    myTeamResult.style.display = "block";
   } else if (state.status === "survey_results") {
     statusEl.textContent = "アンケート結果公開中";
     answerArea.style.display = "none";
@@ -673,15 +669,6 @@ socket.on("stateUpdated", (state) => {
 
     timerValue.textContent = formatRemainingTime(state.remainingTime);
     updateQuestionMeta(state);
-
-    if (state.isPractice) {
-      correctAnswerText.textContent = "例題（正解発表なし）";
-    } else {
-      correctAnswerText.textContent =
-        state.correctAnswer !== null
-          ? `正解: ${state.correctAnswer}%`
-          : "正解: --";
-    }
   }
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);
@@ -695,6 +682,7 @@ socket.on("stateUpdated", (state) => {
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
     renderGauge(state, myTeam);
+    renderRevealedAnswersList(state);
   }
 
   // 順位発表画面の描画
@@ -871,10 +859,20 @@ function renderPodium(state, shouldShow) {
 
 function renderGauge(state, myTeam) {
   gaugeContainer.innerHTML = "";
-  myTeamResult.style.display = "none";
-  myTeamResult.textContent = "";
 
   if (!state.revealedAnswers || state.revealedAnswers.length === 0) {
+    if (summaryMyAnswer) {
+      summaryMyAnswer.textContent = "--%";
+    }
+    if (summaryCorrect) {
+      summaryCorrect.textContent = "--%";
+    }
+    if (summaryScore) {
+      summaryScore.textContent = "--点";
+    }
+    if (summaryCurrentScore) {
+      summaryCurrentScore.textContent = myTeam ? `${myTeam.score} pt` : "-- pt";
+    }
     return;
   }
 
@@ -913,23 +911,80 @@ function renderGauge(state, myTeam) {
 
   gaugeContainer.appendChild(tacho.root);
 
-  const showMyTeamResult = myTeam && showCorrect;
-  if (showMyTeamResult) {
-    const answerText = myAnswer !== null ? `${myAnswer}%` : "未回答";
-    let scoreDeltaText = "";
+  const answerText = myAnswer !== null ? `${myAnswer}%` : "未回答";
+  const correctText =
+    state.correctAnswer !== null && state.correctAnswer !== undefined
+      ? `${clampAnswer(state.correctAnswer)}%`
+      : "--%";
 
-    if (myAnswer !== null && state.correctAnswer !== null) {
-      const diff = Math.abs(myAnswer - state.correctAnswer);
-      let delta = -diff;
-      if (myAnswer === state.correctAnswer) {
-        delta += 50;
-      }
-      scoreDeltaText = `（この問題の得点: ${delta >= 0 ? "+" + delta : delta}点）`;
+  let questionScoreText = "-- pt";
+  if (myAnswer !== null && state.correctAnswer !== null && state.correctAnswer !== undefined) {
+    const diff = Math.abs(myAnswer - state.correctAnswer);
+    let delta = -diff;
+    if (myAnswer === state.correctAnswer) {
+      delta += 50;
     }
-
-    myTeamResult.textContent = `${myTeam.name} / 回答: ${answerText} ${scoreDeltaText}`;
-    myTeamResult.style.display = "block";
+    questionScoreText = `${delta >= 0 ? "+" + delta : delta} pt`;
   }
+
+  if (summaryMyAnswer) {
+    summaryMyAnswer.textContent = answerText;
+  }
+  if (summaryCorrect) {
+    summaryCorrect.textContent = correctText;
+  }
+  if (summaryScore) {
+    summaryScore.textContent = questionScoreText;
+  }
+  if (summaryCurrentScore) {
+    summaryCurrentScore.textContent = myTeam ? `${myTeam.score} pt` : "-- pt";
+  }
+}
+
+function renderRevealedAnswersList(state) {
+  if (!revealedAnswersList) {
+    return;
+  }
+
+  revealedAnswersList.innerHTML = "";
+
+  const revealedAnswers = Array.isArray(state.revealedAnswers)
+    ? state.revealedAnswers
+    : [];
+
+  if (revealedAnswers.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "revealed-answers-empty";
+    empty.textContent = "回答が公開されるとここに表示されます";
+    revealedAnswersList.appendChild(empty);
+    return;
+  }
+
+  const correctValue =
+    state.correctAnswer !== null && state.correctAnswer !== undefined
+      ? clampAnswer(state.correctAnswer)
+      : null;
+
+  revealedAnswers.forEach((item) => {
+    const li = document.createElement("li");
+    const percent =
+      item.answer !== null && item.answer !== undefined
+        ? `${clampAnswer(item.answer)}%`
+        : "未回答";
+    const isOwn = item.teamName === myTeamName;
+    const isCorrect =
+      correctValue !== null &&
+      item.answer !== null &&
+      item.answer !== undefined &&
+      clampAnswer(item.answer) === correctValue;
+
+    li.className = `revealed-answers-item${isOwn ? " is-own" : ""}${isCorrect ? " is-correct" : ""}`;
+    li.innerHTML = `
+      <span class="revealed-answers-name">${escapeHtml(item.teamName || "")}${isOwn ? "（あなた）" : ""}</span>
+      <span class="revealed-answers-value">${escapeHtml(percent)}</span>
+    `;
+    revealedAnswersList.appendChild(li);
+  });
 }
 
 const TACHO = {
@@ -1083,39 +1138,6 @@ function renderTachometer({ teamMarkers, myAnswer, correctValue, showCorrect }) 
   );
 
   root.appendChild(svg);
-
-  const centerValue = document.createElement("div");
-  centerValue.className = "tacho-center-value";
-  if (showCorrect && correctValue !== null) {
-    centerValue.innerHTML = `<span class="tacho-center-label">正解</span><span class="tacho-center-num">${correctValue}<small>%</small></span>`;
-  } else if (myAnswer !== null) {
-    centerValue.innerHTML = `<span class="tacho-center-label">あなた</span><span class="tacho-center-num">${myAnswer}<small>%</small></span>`;
-  } else {
-    centerValue.innerHTML = `<span class="tacho-center-label">回答</span><span class="tacho-center-num">--<small>%</small></span>`;
-  }
-  root.appendChild(centerValue);
-
-  const legend = document.createElement("ul");
-  legend.className = "tacho-legend";
-
-  teamMarkers
-    .slice()
-    .sort((a, b) => a.percent - b.percent)
-    .forEach((marker) => {
-      const li = document.createElement("li");
-      li.className = marker.isOwn ? "tacho-legend-own" : "tacho-legend-item";
-      li.innerHTML = `<span class="tacho-legend-name">${marker.teamName}${marker.isOwn ? "（あなた）" : ""}</span><span class="tacho-legend-value">${marker.percent}%</span>`;
-      legend.appendChild(li);
-    });
-
-  if (showCorrect && correctValue !== null) {
-    const li = document.createElement("li");
-    li.className = "tacho-legend-correct";
-    li.innerHTML = `<span class="tacho-legend-name">正解</span><span class="tacho-legend-value">${correctValue}%</span>`;
-    legend.appendChild(li);
-  }
-
-  root.appendChild(legend);
 
   requestAnimationFrame(() => {
     root.querySelectorAll(".tacho-needle").forEach((needle) => {
