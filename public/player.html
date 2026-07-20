@@ -123,7 +123,18 @@
           <span class="badge-label">QUESTION</span>
           <span id="questionBadgeNum" class="badge-num">-- / --</span>
         </div>
-        <p id="currentQuestionText" class="question-text">まだ問題は表示されていません</p>
+
+        <!-- アンケート設問・選択肢（スクリーンと同様） -->
+        <div id="surveyInnerCard" class="question-inner-card" hidden>
+          <p id="surveyQuestionText" class="survey-question-text"></p>
+          <ul id="surveyOptionsList" class="survey-options"></ul>
+        </div>
+
+        <!-- 問題文 -->
+        <div class="question-inner-card">
+          <p id="currentQuestionText" class="question-text">まだ問題は表示されていません</p>
+        </div>
+
         <p id="questionHint" class="question-hint">0~100%の範囲で予測してください</p>
       </section>
 
@@ -200,6 +211,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- 参加者画面専用のJavaScript -->
-  <script src="/js/player.js?v=15"></script>
+  <script src="/js/player.js?v=16"></script>
 </body>
 </html>

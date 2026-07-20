@@ -12,6 +12,9 @@ const rankingList = document.getElementById("rankingList");
 const rankingTitle = document.getElementById("rankingTitle");
 const waitingSection = document.getElementById("waitingSection");
 const questionView = document.getElementById("questionView");
+const surveyCard = document.getElementById("surveyCard");
+const surveyQuestionText = document.getElementById("surveyQuestionText");
+const surveyOptionsList = document.getElementById("surveyOptionsList");
 const resultView = document.getElementById("resultView");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
@@ -21,6 +24,69 @@ const resultsView = document.getElementById("resultsView");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+
+const OPTION_BADGE_SRC = {
+  A: "/data/image/components/square-a.png",
+  B: "/data/image/components/square-b.png",
+  C: "/data/image/components/square-c.png",
+  D: "/data/image/components/square-d.png"
+};
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function optionBadgeHtml(key) {
+  const normalized = String(key || "").toUpperCase();
+  const src = OPTION_BADGE_SRC[normalized];
+  if (!src) {
+    return escapeHtml(normalized);
+  }
+  return `<img class="option-badge" src="${src}" alt="${escapeHtml(normalized)}" />`;
+}
+
+function formatQuestionHtml(questionText) {
+  const escaped = escapeHtml(questionText || "");
+  return escaped.replace(/\{\{([A-Da-d])\}\}/g, (_, key) => optionBadgeHtml(key));
+}
+
+function renderSurveyCard(question) {
+  const options = question && Array.isArray(question.surveyOptions)
+    ? question.surveyOptions
+    : [];
+  const hasSurvey =
+    question &&
+    question.surveyQuestion &&
+    options.length > 0;
+
+  if (!hasSurvey) {
+    surveyCard.hidden = true;
+    surveyQuestionText.textContent = "";
+    surveyOptionsList.innerHTML = "";
+    return;
+  }
+
+  surveyCard.hidden = false;
+  surveyQuestionText.textContent = question.surveyQuestion;
+  const focusKey = String(question.focusOption || "").toUpperCase();
+  surveyOptionsList.innerHTML = options
+    .map((option) => {
+      const key = String(option.key || "").toUpperCase();
+      const isFocus = focusKey && key === focusKey;
+      return `
+        <li class="survey-option${isFocus ? " is-focus" : ""}">
+          ${optionBadgeHtml(key)}
+          <span class="survey-option-label">${escapeHtml(option.label || "")}</span>
+        </li>
+      `;
+    })
+    .join("");
+}
 
 // 結果発表の公開段階（管理者が操作）
 let lastResultsRevealStep = -1;
@@ -143,7 +209,7 @@ socket.on("stateUpdated", (state) => {
   const showFinishedView = state.status === "finished";
 
   waitingSection.style.display = showWaiting ? "flex" : "none";
-  questionView.style.display = showQuestionView ? "block" : "none";
+  questionView.style.display = showQuestionView ? "flex" : "none";
   resultView.style.display = showResultView ? "block" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
@@ -174,15 +240,14 @@ socket.on("stateUpdated", (state) => {
   if (state.status === "waiting") {
     statusEl.textContent = "参加受付中";
     currentQuestionText.textContent = "出題を待っています";
+    renderSurveyCard(null);
     timerText.textContent = "残り時間: --:--";
     correctAnswerText.textContent = "正解: --";
     gaugeContainer.innerHTML = "";
   } else if (state.status === "question" || state.status === "answer_closed") {
     statusEl.textContent = state.isPractice
-      ? state.status === "answer_closed"
-        ? "例題：回答受付終了"
-        : "例題：回答受付中"
-      : "問題表示";
+      ? "例題"
+      : `第${(state.currentQuestionIndex ?? -1) + 1}問`;
   } else if (state.status === "answers_revealed") {
     statusEl.textContent = "回答公開";
   } else if (state.status === "correct_revealed") {
@@ -205,9 +270,15 @@ socket.on("stateUpdated", (state) => {
     state.status !== "finished" &&
     state.status !== "results_announced"
   ) {
-    currentQuestionText.textContent = state.currentQuestion
-      ? state.currentQuestion.questionText
-      : "出題を待っています";
+    if (state.currentQuestion) {
+      renderSurveyCard(state.currentQuestion);
+      currentQuestionText.innerHTML = formatQuestionHtml(
+        state.currentQuestion.questionText
+      );
+    } else {
+      renderSurveyCard(null);
+      currentQuestionText.textContent = "出題を待っています";
+    }
 
     timerText.textContent = formatRemainingTime(state.remainingTime);
 

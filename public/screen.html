@@ -32,15 +32,21 @@
       <ul id="teamList"></ul>
     </div>
 
-    <!-- 問題表示用のエリア -->
-    <div id="questionView" class="card" style="display: none;">
-      <h2>現在の問題</h2>
+    <!-- 問題表示用のエリア（アンケートカード + 問題文カード） -->
+    <div id="questionView" class="question-view" style="display: none;">
+      <!-- アンケートの設問と選択肢 -->
+      <section id="surveyCard" class="question-card survey-card" hidden>
+        <p id="surveyQuestionText" class="survey-question-text"></p>
+        <ul id="surveyOptionsList" class="survey-options"></ul>
+      </section>
 
-      <!-- 現在の問題文 -->
-      <p id="currentQuestionText">出題を待っています</p>
+      <!-- 問題文（割合を問う） -->
+      <section class="question-card prompt-card">
+        <p id="currentQuestionText" class="prompt-question-text">出題を待っています</p>
+      </section>
 
-      <!-- 残り時間（大きく表示） -->
-      <p id="timerText">残り時間: --:--</p>
+      <!-- 残り時間 -->
+      <p id="timerText" class="question-timer">残り時間: --:--</p>
     </div>
 
     <!-- 回答公開・正解発表用のエリア -->
@@ -83,6 +89,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=17"></script>
+  <script src="/js/screen.js?v=18"></script>
 </body>
 </html>
