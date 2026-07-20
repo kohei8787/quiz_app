@@ -575,7 +575,9 @@ socket.on("stateUpdated", (state) => {
   scoreText.textContent = myTeam
     ? `スコア： ${myTeam.score} pt`
     : "スコア： -- pt";
-  questionProgress.textContent = scoreText.textContent;
+  if (questionProgress) {
+    questionProgress.textContent = scoreText.textContent;
+  }
 
   // ゲージは回答公開・正解発表のときだけ描画
   if (showResultView) {
@@ -696,27 +698,20 @@ function renderPodium(state, shouldShow) {
     return;
   }
 
-  // 見た目の並び: 2位 | 1位 | 3位（未公開の枠はプレースホルダ）
-  const displayOrder = [1, 0, 2].filter((index) => index < topTeams.length);
+  // 見た目の並び: 2位 | 1位 | 3位（未公開の順位は描画しない）
+  const displayOrder = [1, 0, 2].filter((index) => {
+    if (index >= topTeams.length) {
+      return false;
+    }
+    const place = index + 1;
+    return revealedPlaces.has(place);
+  });
 
   displayOrder.forEach((rankIndex) => {
     const team = topTeams[rankIndex];
     const place = rankIndex + 1;
     const item = document.createElement("div");
     item.className = `podium-place podium-place--${place}`;
-
-    if (!revealedPlaces.has(place)) {
-      item.classList.add("podium-place--hidden");
-      item.innerHTML = `
-        <p class="podium-name">？</p>
-        <p class="podium-score">--</p>
-        <div class="podium-block">
-          <span class="podium-rank">${place}</span>
-        </div>
-      `;
-      podium.appendChild(item);
-      return;
-    }
 
     item.innerHTML = `
       <p class="podium-name"></p>
@@ -741,7 +736,7 @@ function renderPodium(state, shouldShow) {
 
   // 今回新しく公開された順位だけアニメーション
   requestAnimationFrame(() => {
-    podium.querySelectorAll(".podium-place:not(.podium-place--hidden)").forEach((el) => {
+    podium.querySelectorAll(".podium-place").forEach((el) => {
       if (!el.classList.contains("is-visible")) {
         el.classList.add("is-visible");
       }

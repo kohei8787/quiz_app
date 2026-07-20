@@ -311,11 +311,11 @@ body:not(.joined) #joinSection {
   color: #000;
   font-weight: bold;
   line-height: 1;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .joined-title {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-size: 1.5rem;
   font-weight: 700;
   color: #1e293b;
@@ -1130,21 +1130,23 @@ input:disabled {
 /* 結果発表（1〜3位ポディウム） */
 .results-view {
   overflow: hidden;
+  margin-top: 24px;
+  padding-top: 28px;
+  padding-bottom: 24px;
 }
 
-.results-subtitle {
-  margin: 0 0 20px;
-  color: #64748b;
-  font-size: 0.95rem;
+.results-view h2 {
+  margin: 0 0 22px;
+  text-align: center;
 }
 
 .podium {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   min-height: 260px;
-  padding: 8px 0 4px;
+  padding: 10px 0 6px;
 }
 
 .podium-empty {
