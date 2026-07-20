@@ -322,6 +322,14 @@ body.waiting-background #status {
   letter-spacing: 0.02em;
 }
 
+#timerText.question-timer {
+  margin: 8px 0 0;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #0f766e;
+  letter-spacing: 0.02em;
+}
+
 #correctAnswerText {
   margin: 0 0 24px;
   font-size: clamp(1.6rem, 3vw, 2.4rem);
