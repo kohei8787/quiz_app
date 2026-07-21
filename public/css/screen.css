@@ -268,6 +268,43 @@ body.result-reveal-active .container {
   font-size: clamp(1.05rem, 1.8vw, 1.45rem);
 }
 
+.survey-options.is-photo-mode {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 16px;
+}
+
+.survey-options.is-photo-mode .survey-option {
+  flex-direction: column;
+  align-items: center !important;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 12px;
+}
+
+.survey-options.is-photo-mode .survey-option .option-badge {
+  width: clamp(34px, 3vw, 42px);
+  height: clamp(34px, 3vw, 42px);
+}
+
+.survey-option-image {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.survey-options.is-photo-mode .survey-option-label {
+  min-height: 0;
+  text-align: center;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+}
+
 .option-badge {
   display: inline-block;
   width: 1.15em;

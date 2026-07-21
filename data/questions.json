@@ -55,9 +55,9 @@
       "id": 4,
       "surveyQuestion": "Q.歴代スカイライン、どのデザインが好き？",
       "surveyOptions": [
-        { "key": "A", "label": "C10(ハコスカ)" },
-        { "key": "B", "label": "R34" },
-        { "key": "C", "label": "V37(現行モデル)" }
+        { "key": "A", "label": "C10(ハコスカ)", "image": "/data/image/components/c10" },
+        { "key": "B", "label": "R34", "image": "/data/image/components/r34.jpg" },
+        { "key": "C", "label": "V37(現行モデル)", "image": "/data/image/components/v37.jpg" }
       ],
       "focusOption": "B",
       "questionText": "{{B}}と答えた人の割合は何％でしょう？",
