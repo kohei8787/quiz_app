@@ -740,11 +740,45 @@ function renderTachometer({ teamMarkers, correctValue, showCorrect }) {
   requestAnimationFrame(() => {
     root.querySelectorAll(".tacho-needle").forEach((needle) => {
       const target = Number(needle.dataset.target);
+      if (needle.classList.contains("tacho-needle-correct")) {
+        animateCorrectNeedle(needle, target);
+        return;
+      }
       needle.style.transform = `rotate(${valueToRotateDeg(target)}deg)`;
     });
   });
 
   return { root };
+}
+
+function animateCorrectNeedle(needle, targetValue) {
+  const target = clampAnswer(targetValue);
+  const pivotValue = 85;
+  const pivotDeg = valueToRotateDeg(pivotValue);
+  const targetDeg = valueToRotateDeg(target);
+
+  needle.style.transform = `rotate(${valueToRotateDeg(0)}deg)`;
+
+  // 正解が85%以下: 85%まで進んでから正解値へ戻る
+  if (target <= pivotValue) {
+    needle.style.transition = "transform 1200ms cubic-bezier(0.52, 0.02, 0.32, 1)";
+    needle.style.transform = `rotate(${pivotDeg}deg)`;
+
+    setTimeout(() => {
+      needle.style.transition = "transform 620ms cubic-bezier(0.33, 0, 0.67, 1)";
+      needle.style.transform = `rotate(${targetDeg}deg)`;
+    }, 1220);
+    return;
+  }
+
+  // 正解が85%以上: 85%付近で一度ゆっくりになってから正解値へ向かう
+  needle.style.transition = "transform 1350ms cubic-bezier(0.52, 0.02, 0.32, 1)";
+  needle.style.transform = `rotate(${pivotDeg}deg)`;
+
+  setTimeout(() => {
+    needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
+    needle.style.transform = `rotate(${targetDeg}deg)`;
+  }, 1370);
 }
 
 function createNeedleGroup(className, value) {
