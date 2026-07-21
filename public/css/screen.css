@@ -635,7 +635,7 @@ body.waiting-background #status {
   border: none;
   outline: none;
   box-shadow: none;
-  background: linear-gradient(180deg, var(--face-front) 0%, color-mix(in srgb, var(--face-front) 72%, #000) 100%);
+  background: var(--face-front);
   color: #fff;
   text-align: center;
 }
@@ -646,7 +646,7 @@ body.waiting-background #status {
   top: calc(-1 * var(--podium-depth-y));
   width: calc(100% + var(--podium-depth-x));
   height: var(--podium-depth-y);
-  background: linear-gradient(135deg, var(--face-top) 0%, color-mix(in srgb, var(--face-top) 80%, #000) 100%);
+  background: var(--face-top);
   clip-path: polygon(
     0 100%,
     var(--podium-depth-x) 0,
@@ -661,7 +661,7 @@ body.waiting-background #status {
   left: 100%;
   width: var(--podium-depth-x);
   height: calc(100% + var(--podium-depth-y));
-  background: linear-gradient(180deg, var(--face-side) 0%, color-mix(in srgb, var(--face-side) 70%, #000) 100%);
+  background: var(--face-side);
   clip-path: polygon(
     0 var(--podium-depth-y),
     100% 0,
@@ -699,23 +699,23 @@ body.waiting-background #status {
 
 .podium-place--1 .podium-block {
   --podium-height: clamp(180px, 28vw, 240px);
-  --face-front: #fbbf24;
-  --face-top: #fde68a;
-  --face-side: #b45309;
+  --face-front: #fff584;
+  --face-top: #e2b844;
+  --face-side: #ffc95c;
 }
 
 .podium-place--2 .podium-block {
   --podium-height: clamp(140px, 22vw, 186px);
-  --face-front: #cbd5e1;
-  --face-top: #f1f5f9;
-  --face-side: #475569;
+  --face-front: #dbf2fa;
+  --face-top: #afd6eb;
+  --face-side: #c7d9dc;
 }
 
 .podium-place--3 .podium-block {
   --podium-height: clamp(110px, 17vw, 146px);
-  --face-front: #fdba74;
-  --face-top: #fed7aa;
-  --face-side: #9a3412;
+  --face-front: #ffbd84;
+  --face-top: #d18d52;
+  --face-side: #f19257;
 }
 
 @keyframes podiumRise {
