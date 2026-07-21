@@ -133,6 +133,34 @@ function renderQuestionContent(question, fallbackText) {
   renderSurveyCard(null);
   currentQuestionText.textContent = fallbackText;
 }
+
+function buildQuestionRenderKey(state, fallbackText) {
+  if (!state || !state.currentQuestion) {
+    return `${state && state.status ? state.status : "none"}|none|${fallbackText || ""}`;
+  }
+
+  const question = state.currentQuestion;
+  return [
+    state.status || "",
+    state.currentQuestionId || "",
+    question.questionText || "",
+    question.surveyQuestion || "",
+    Array.isArray(question.surveyOptions) ? question.surveyOptions.length : 0
+  ].join("|");
+}
+
+let lastQuestionRenderKey = "";
+
+function renderQuestionContentIfChanged(state, fallbackText) {
+  const nextRenderKey = buildQuestionRenderKey(state, fallbackText);
+  if (nextRenderKey === lastQuestionRenderKey) {
+    return;
+  }
+
+  renderQuestionContent(state.currentQuestion, fallbackText);
+  lastQuestionRenderKey = nextRenderKey;
+}
+
 const editSection = document.getElementById("editSection");
 const editSectionTitle = document.getElementById("editSectionTitle");
 const editJoinCodeInput = document.getElementById("editJoinCodeInput");
@@ -653,7 +681,7 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "started") {
     statusEl.textContent = "イベント開始。例題または本番の出題を待っています";
     answerArea.style.display = "block";
-    renderQuestionContent(null, "出題をお待ちください");
+    renderQuestionContentIfChanged(state, "出題をお待ちください");
     questionBadgeNum.textContent = "第--問";
     questionHint.textContent = "まもなく出題されます";
     answerMessage.textContent = "出題をお待ちください";
@@ -669,13 +697,12 @@ socket.on("stateUpdated", (state) => {
     state.status !== "finished" &&
     state.status !== "results_announced"
   ) {
-    renderQuestionContent(
-      state.currentQuestion,
-      "まだ問題は表示されていません"
-    );
+    renderQuestionContentIfChanged(state, "まだ問題は表示されていません");
 
     timerValue.textContent = formatRemainingTime(state.remainingTime);
     updateQuestionMeta(state);
+  } else {
+    lastQuestionRenderKey = "";
   }
 
   const myTeam = state.teams.find((team) => team.name === myTeamName);
