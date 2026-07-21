@@ -119,6 +119,24 @@ function renderSurveyCard(question) {
     })
     .join("");
 
+  // CSSの競合やキャッシュ差分があっても、選択肢は常に縦中央にそろえる
+  surveyOptionsList.querySelectorAll(".survey-option").forEach((item) => {
+    item.style.alignItems = "center";
+
+    const badge = item.querySelector(".option-badge");
+    if (badge) {
+      badge.style.alignSelf = "center";
+      badge.style.marginTop = "0";
+    }
+
+    const label = item.querySelector(".survey-option-label");
+    if (label) {
+      label.style.alignSelf = "center";
+      label.style.display = "block";
+      label.style.minHeight = "clamp(40px, 4.5vw, 56px)";
+    }
+  });
+
   // 長い選択肢は最大2行に収まるようフォントを縮小（それでも足りなければ折り返して全文表示）
   requestAnimationFrame(fitSurveyOptionLabels);
 }
@@ -153,6 +171,22 @@ function fitSurveyOptionLabels() {
     }
   });
 }
+
+function buildQuestionRenderKey(state) {
+  if (!state || !state.currentQuestion) {
+    return `${state && state.status ? state.status : "none"}:none`;
+  }
+  const question = state.currentQuestion;
+  return [
+    state.status || "",
+    state.currentQuestionId || "",
+    question.questionText || "",
+    question.surveyQuestion || "",
+    Array.isArray(question.surveyOptions) ? question.surveyOptions.length : 0
+  ].join("|");
+}
+
+let lastQuestionRenderKey = "";
 
 // 結果発表の公開段階（管理者が操作）
 let lastResultsRevealStep = -1;
@@ -352,17 +386,23 @@ socket.on("stateUpdated", (state) => {
     state.status !== "finished" &&
     state.status !== "results_announced"
   ) {
-    if (state.currentQuestion) {
-      renderSurveyCard(state.currentQuestion);
-      currentQuestionText.innerHTML = formatQuestionHtml(
-        state.currentQuestion.questionText
-      );
-    } else {
-      renderSurveyCard(null);
-      currentQuestionText.textContent = "出題を待っています";
+    const nextQuestionRenderKey = buildQuestionRenderKey(state);
+    if (nextQuestionRenderKey !== lastQuestionRenderKey) {
+      if (state.currentQuestion) {
+        renderSurveyCard(state.currentQuestion);
+        currentQuestionText.innerHTML = formatQuestionHtml(
+          state.currentQuestion.questionText
+        );
+      } else {
+        renderSurveyCard(null);
+        currentQuestionText.textContent = "出題を待っています";
+      }
+      lastQuestionRenderKey = nextQuestionRenderKey;
     }
 
     timerValue.textContent = formatRemainingTime(state.remainingTime);
+  } else {
+    lastQuestionRenderKey = "";
   }
 
   if (state.status === "answers_revealed") {
