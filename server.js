@@ -124,6 +124,14 @@ function toPublicQuestion(question) {
   if (!question) {
     return null;
   }
+
+  const focusOptions = (Array.isArray(question.focusOptions)
+    ? question.focusOptions
+    : [question.focusOption]
+  )
+    .map((key) => String(key || "").toUpperCase().trim())
+    .filter((key) => key.length > 0);
+
   return {
     id: question.id,
     questionText: question.questionText,
@@ -131,7 +139,9 @@ function toPublicQuestion(question) {
     surveyOptions: Array.isArray(question.surveyOptions)
       ? question.surveyOptions
       : [],
-    focusOption: question.focusOption || null,
+    // 互換性維持のため先頭要素を focusOption にも載せる
+    focusOption: focusOptions[0] || null,
+    focusOptions,
     surveyImage: question.surveyImage || null
   };
 }

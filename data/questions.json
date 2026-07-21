@@ -1,26 +1,121 @@
 {
-    "practice": {
-      "id": "practice",
-      "surveyQuestion": "Q.キャリア形成において重視するのは？",
+  "practice": {
+    "id": "practice",
+    "surveyQuestion": "Q.キャリア形成において重視するのは？",
+    "surveyOptions": [
+      { "key": "A", "label": "一つの専門領域を極める" },
+      { "key": "B", "label": "広い知識と経験を持ち、視野を広げる" }
+    ],
+    "focusOption": "A",
+    "questionText": "{{A}}と答えた新入社員の割合は何％でしょう？"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "surveyQuestion": "Q.将来どこまで出世したい？",
       "surveyOptions": [
-        { "key": "A", "label": "一つの専門領域を極める" },
-        { "key": "B", "label": "広い知識と経験を持ち、視野を広げる" }
+        { "key": "A", "label": "CEO" },
+        { "key": "B", "label": "役員" },
+        { "key": "C", "label": "部長層"},
+        { "key": "D", "label": "専門領域のスペシャリスト"}
       ],
       "focusOption": "A",
-      "questionText": "{{A}}と答えた新入社員の割合は何％でしょう？"
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 22,
+      "surveyImage": "/data/survey/1.png"
     },
-    "questions": [
-        {
-          "id": 1,
-          "surveyQuestion": "Q.将来どこまで出世したい？",
-          "surveyOptions": [
-            { "key": "A", "label": "CEO" },
-            { "key": "B", "label": "役員" }
-            { "key": "C", "label": "部長層"}
-            { "key": "D", "label": "専門領域のスペシャリスト"}
-          ],
-          "focusOption": "A",
-          "questionText": "{{A}}と答えた人の割合は何％でしょう？",
-          "correctAnswer": 68,
-          "surveyImage": "/data/survey/1.png"
-        },
+    {
+      "id": 2,
+      "surveyQuestion": "Q.理想の上司の条件は？",
+      "surveyOptions": [
+        { "key": "A", "label": "ユーモアがあり親しみやすい" },
+        { "key": "B", "label": "知識や経験が豊富で頼もしい" },
+        { "key": "C", "label": "面倒見が良く時にしっかり叱ってくれる" }
+      ],
+      "focusOption": "B",
+      "questionText": "{{B}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 42,
+      "surveyImage": "/data/survey/2.png"
+    },
+    {
+      "id": 3,
+      "surveyQuestion": "Q.正直、部署の飲み会にはどれくらい参加したい？",
+      "surveyOptions": [
+        { "key": "A", "label": "絶対に参加したい" },
+        { "key": "B", "label": "たまに参加したい" },
+        { "key": "C", "label": "そんなに参加したくない" },
+        { "key": "D", "label": "絶対参加したくない" }
+      ],
+      "focusOption": ["A", "B"],
+      "questionText": "{{A}}もしくは{{B}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 75,
+      "surveyImage": "/data/survey/3.png"
+    },
+    {
+      "id": 4,
+      "surveyQuestion": "Q.歴代スカイライン、どのデザインが好き？",
+      "surveyOptions": [
+        { "key": "A", "label": "C10(ハコスカ)" },
+        { "key": "B", "label": "R34" },
+        { "key": "C", "label": "V37(現行モデル)" }
+      ],
+      "focusOption": "B",
+      "questionText": "{{B}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 42,
+      "surveyImage": "/data/survey/4.png"
+    },
+    {
+      "id": 5,
+      "surveyQuestion": "Q.上司の叱り方はどっちがいい？",
+      "surveyOptions": [
+        { "key": "A", "label": "口調はキツめだが期待が伝わる" },
+        { "key": "B", "label": "なるべく厳しい言い方をせず関係を温存しようとする" }
+      ],
+      "focusOption": "A",
+      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 44,
+      "surveyImage": "/data/survey/5.png"
+    },
+    {
+      "id": 6,
+      "surveyQuestion": "Q.部署の飲み会で上司・先輩に一番聞きたいことは？",
+      "surveyOptions": [
+        { "key": "A", "label": "仕事に関して普段聞きづらいこと・悩み相談" },
+        { "key": "B", "label": "上司・先輩の人となりやプライベート" },
+        { "key": "C", "label": "自分に対する印象・アドバイス" }
+      ],
+      "focusOption": "C",
+      "questionText": "{{C}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 11,
+      "surveyImage": "/data/survey/6.png"
+    },
+    {
+      "id": 7,
+      "surveyQuestion": "Q.もしどれか一つだけ手に入るとしたら？",
+      "surveyOptions": [
+        { "key": "A", "label": "圧倒的なスキル" },
+        { "key": "B", "label": "無双のコミュ力" },
+        { "key": "C", "label": "無敵のメンタル" },
+        { "key": "D", "label": "豊富な人脈" }
+      ],
+      "focusOption": "D",
+      "questionText": "{{D}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 25,
+      "surveyImage": "/data/survey/7.png"
+    },
+    {
+      "id": 8,
+      "surveyQuestion": "Q.プライベートでどれくらい運転する？",
+      "surveyOptions": [
+        { "key": "A", "label": "週1回以上" },
+        { "key": "B", "label": "月2〜3回程度" },
+        { "key": "C", "label": "数ヶ月に1回程度" },
+        { "key": "D", "label": "あまり運転しない" }
+      ],
+      "focusOption": ["C", "D"],
+      "questionText": "{{C}}もしくは{{D}}と答えた人の割合は何％でしょう？",
+      "correctAnswer": 58,
+      "surveyImage": "/data/survey/8.png"
+    }
+  ]
+}

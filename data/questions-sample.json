@@ -17,8 +17,8 @@
         { "key": "A", "label": "朝食を毎日食べる" },
         { "key": "B", "label": "朝食はあまり食べない" }
       ],
-      "focusOption": "A",
-      "questionText": "{{A}}と答えた人の割合は何％でしょう？",
+      "focusOptions": ["A", "B"],
+      "questionText": "{{A}}もしくは{{B}}と答えた人の割合は何％でしょう？",
       "correctAnswer": 68,
       "surveyImage": "/data/survey/1.svg"
     },
