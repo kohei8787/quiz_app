@@ -560,13 +560,24 @@ function fitResultTeamLegends() {
   resultView.style.setProperty("--result-legend-radius", `${radius}px`);
 }
 
-function renderTeamLegend(listEl, teams) {
+function renderTeamLegend(listEl, teams, options = {}) {
+  const showCorrect = Boolean(options.showCorrect);
+  const correctValue =
+    options.correctValue !== null && options.correctValue !== undefined
+      ? clampAnswer(options.correctValue)
+      : null;
+
   listEl.innerHTML = "";
   teams.forEach((team) => {
     const li = document.createElement("li");
     li.className = "result-team-legend-item";
-    if (team.answer === null || team.answer === undefined) {
+    const hasAnswer = team.answer !== null && team.answer !== undefined;
+
+    if (!hasAnswer) {
       li.classList.add("is-unanswered");
+    }
+    if (showCorrect && hasAnswer && correctValue !== null && team.answer === correctValue) {
+      li.classList.add("is-correct");
     }
 
     const swatch = document.createElement("span");
@@ -577,9 +588,17 @@ function renderTeamLegend(listEl, teams) {
     const name = document.createElement("span");
     name.className = "result-team-name";
     name.textContent = team.teamName || "";
+    if ((team.teamName || "").length >= 13) {
+      name.classList.add("is-long");
+    }
+
+    const answer = document.createElement("span");
+    answer.className = "result-team-answer";
+    answer.textContent = hasAnswer ? `${team.answer}%` : "--%";
 
     li.appendChild(swatch);
     li.appendChild(name);
+    li.appendChild(answer);
     listEl.appendChild(li);
   });
 }
@@ -614,8 +633,14 @@ function renderGauge(state) {
   }));
 
   const mid = Math.ceil(teams.length / 2);
-  renderTeamLegend(resultTeamListLeft, teams.slice(0, mid));
-  renderTeamLegend(resultTeamListRight, teams.slice(mid));
+  renderTeamLegend(resultTeamListLeft, teams.slice(0, mid), {
+    showCorrect,
+    correctValue
+  });
+  renderTeamLegend(resultTeamListRight, teams.slice(mid), {
+    showCorrect,
+    correctValue
+  });
 
   const teamMarkers = teams
     .filter((team) => team.answer !== null)
@@ -707,16 +732,34 @@ function renderTachometer({ teamMarkers, correctValue, showCorrect }) {
 
   teamMarkers.forEach((marker) => {
     const point = tachoPoint(marker.percent, TACHO.radius);
-    const dot = createSvgEl("circle", {
-      cx: point.x,
-      cy: point.y,
-      r: 7,
-      class: "tacho-team-dot"
+    const rad = percentToRad(marker.percent);
+    // 円周上の法線方向（中心->点）に短い棒を置く
+    const nx = Math.cos(rad);
+    const ny = -Math.sin(rad);
+    const inset = 4;
+    const halfLen = 7;
+    const cx = point.x - nx * inset;
+    const cy = point.y - ny * inset;
+
+    const outline = createSvgEl("line", {
+      x1: cx - nx * halfLen,
+      y1: cy - ny * halfLen,
+      x2: cx + nx * halfLen,
+      y2: cy + ny * halfLen,
+      class: "tacho-team-marker-outline"
+    });
+    const bar = createSvgEl("line", {
+      x1: cx - nx * halfLen,
+      y1: cy - ny * halfLen,
+      x2: cx + nx * halfLen,
+      y2: cy + ny * halfLen,
+      class: "tacho-team-marker"
     });
     if (marker.color) {
-      dot.style.fill = marker.color;
+      bar.style.stroke = marker.color;
     }
-    svg.appendChild(dot);
+    svg.appendChild(outline);
+    svg.appendChild(bar);
   });
 
   if (showCorrect && correctValue !== null) {
