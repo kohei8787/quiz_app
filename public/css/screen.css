@@ -279,7 +279,7 @@ body.result-reveal-active .container {
 
 .survey-option {
   display: flex;
-  align-items: center;
+  align-items: center !important;
   gap: 16px;
   padding: 10px 18px;
   border-radius: 12px;
@@ -555,15 +555,11 @@ body.result-reveal-active .container {
 }
 
 .tacho-team-marker-outline {
-  stroke: #ffffff;
-  stroke-width: 5.4;
-  stroke-linecap: round;
+  fill: #ffffff;
 }
 
 .tacho-team-marker {
-  stroke: #f97316;
-  stroke-width: 4.2;
-  stroke-linecap: round;
+  fill: #f97316;
   filter: drop-shadow(0 0 1px rgba(15, 23, 42, 0.85));
 }
 
