@@ -55,10 +55,16 @@
     </div>
 
     <!-- 回答公開・正解発表用のエリア -->
-    <div id="resultView" class="card" style="display: none;">
+    <div id="resultView" class="card result-reveal-card" style="display: none;">
       <h2 id="resultTitle">回答公開</h2>
-      <p id="correctAnswerText">正解: --</p>
-      <div id="gaugeContainer" style="margin: 24px 0;"></div>
+      <div class="result-reveal-body">
+        <ul id="resultTeamListLeft" class="result-team-legend" aria-label="チーム一覧（左）"></ul>
+        <div class="result-reveal-center">
+          <div id="gaugeContainer" class="tacho-container"></div>
+          <p id="correctAnswerText" class="result-correct-label" hidden>正解: --</p>
+        </div>
+        <ul id="resultTeamListRight" class="result-team-legend" aria-label="チーム一覧（右）"></ul>
+      </div>
     </div>
 
     <!-- アンケート結果公開用のエリア（問題ごとに画像が切り替わる） -->
@@ -94,6 +100,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=21"></script>
+  <script src="/js/screen.js?v=22"></script>
 </body>
 </html>
