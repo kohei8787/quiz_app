@@ -102,11 +102,18 @@ function renderSurveyCard(question) {
 
   surveyInnerCard.hidden = false;
   surveyQuestionText.textContent = question.surveyQuestion;
-  const focusKey = String(question.focusOption || "").toUpperCase();
+  const focusKeys = new Set(
+    (Array.isArray(question.focusOptions)
+      ? question.focusOptions
+      : [question.focusOption]
+    )
+      .map((key) => String(key || "").toUpperCase().trim())
+      .filter((key) => key.length > 0)
+  );
   surveyOptionsList.innerHTML = options
     .map((option) => {
       const key = String(option.key || "").toUpperCase();
-      const isFocus = focusKey && key === focusKey;
+      const isFocus = focusKeys.has(key);
       return `
         <li class="survey-option${isFocus ? " is-focus" : ""}">
           ${optionBadgeHtml(key)}
