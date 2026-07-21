@@ -279,8 +279,8 @@ socket.on("stateUpdated", (state) => {
   rankingView.style.display = showRankingView ? "block" : "none";
   resultsView.style.display = showResultsView ? "block" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
-  // 出題中はヘッダー内に「第n問」とタイマーを出すため、上部statusは隠す
-  statusEl.style.display = showQuestionView ? "none" : "";
+  // 出題中と回答公開・正解発表中はカード側に見出しがあるため、上部statusは隠す
+  statusEl.style.display = showQuestionView || showResultView ? "none" : "";
 
   // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
   const useEventBackground =
@@ -294,6 +294,7 @@ socket.on("stateUpdated", (state) => {
     state.status === "results_announced";
   document.body.classList.toggle("waiting-background", showWaiting);
   document.body.classList.toggle("event-background", useEventBackground);
+  document.body.classList.toggle("result-reveal-active", showResultView);
 
   if (showWaiting) {
     scheduleFitTeamList();
@@ -645,12 +646,21 @@ function renderGauge(state) {
 const TACHO = {
   cx: 150,
   cy: 150,
-  radius: 108,
-  needleLen: 92
+  // 半径は画像幅(300)の半分
+  radius: 150,
+  needleLen: 138
 };
 
+const TACHO_FACE_SRC = "/data/image/components/meter-black.png";
+const TACHO_START_DEG = 240;
+const TACHO_END_DEG = 0;
+
 function percentToRad(percent) {
-  return Math.PI * (1 - percent / 100);
+  const clamped = Math.max(0, Math.min(100, Number(percent)));
+  const deg =
+    TACHO_START_DEG +
+    (TACHO_END_DEG - TACHO_START_DEG) * (clamped / 100);
+  return (deg * Math.PI) / 180;
 }
 
 function tachoPoint(percent, radius = TACHO.radius) {
@@ -662,7 +672,13 @@ function tachoPoint(percent, radius = TACHO.radius) {
 }
 
 function valueToRotateDeg(value) {
-  return value * 1.8 - 90;
+  const clamped = Math.max(0, Math.min(100, Number(value)));
+  const deg =
+    TACHO_START_DEG +
+    (TACHO_END_DEG - TACHO_START_DEG) * (clamped / 100);
+  // 針の初期向きは「上」なので、右0°・反時計回り基準の角度を
+  // CSS回転角（時計回り正）へ変換する。
+  return 90 - deg;
 }
 
 function createSvgEl(tag, attrs = {}) {
@@ -677,76 +693,20 @@ function renderTachometer({ teamMarkers, correctValue, showCorrect }) {
   const root = document.createElement("div");
   root.className = "tacho-gauge";
 
+  const face = document.createElement("img");
+  face.className = "tacho-face";
+  face.src = TACHO_FACE_SRC;
+  face.alt = "回答タコメーター";
+
   const svg = createSvgEl("svg", {
-    viewBox: "0 0 300 180",
-    class: "tacho-svg",
-    role: "img",
-    "aria-label": "回答タコメーター"
-  });
-
-  const defs = createSvgEl("defs");
-  const gradient = createSvgEl("linearGradient", {
-    id: "tachoArcGradient",
-    x1: "0%",
-    y1: "0%",
-    x2: "100%",
-    y2: "0%"
-  });
-  gradient.appendChild(
-    createSvgEl("stop", { offset: "0%", "stop-color": "#93c5fd" })
-  );
-  gradient.appendChild(
-    createSvgEl("stop", { offset: "100%", "stop-color": "#2563eb" })
-  );
-  defs.appendChild(gradient);
-  svg.appendChild(defs);
-
-  const arcStart = tachoPoint(0, TACHO.radius);
-  const arcEnd = tachoPoint(100, TACHO.radius);
-
-  svg.appendChild(
-    createSvgEl("path", {
-      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
-      class: "tacho-arc-bg"
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("path", {
-      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
-      class: "tacho-arc-fill"
-    })
-  );
-
-  [0, 25, 50, 75, 100].forEach((tick) => {
-    const outer = tachoPoint(tick, TACHO.radius);
-    const inner = tachoPoint(tick, TACHO.radius - (tick % 50 === 0 ? 14 : 8));
-    svg.appendChild(
-      createSvgEl("line", {
-        x1: inner.x,
-        y1: inner.y,
-        x2: outer.x,
-        y2: outer.y,
-        class: tick % 50 === 0 ? "tacho-tick-major" : "tacho-tick-minor"
-      })
-    );
-
-    if (tick % 50 === 0) {
-      const labelPoint = tachoPoint(tick, TACHO.radius - 24);
-      const label = createSvgEl("text", {
-        x: labelPoint.x,
-        y: labelPoint.y,
-        class: "tacho-scale-label",
-        "text-anchor": "middle",
-        "dominant-baseline": "middle"
-      });
-      label.textContent = `${tick}`;
-      svg.appendChild(label);
-    }
+    viewBox: "0 0 300 300",
+    class: "tacho-overlay",
+    role: "presentation",
+    "aria-hidden": "true"
   });
 
   teamMarkers.forEach((marker) => {
-    const point = tachoPoint(marker.percent, TACHO.radius - 2);
+    const point = tachoPoint(marker.percent, TACHO.radius);
     const dot = createSvgEl("circle", {
       cx: point.x,
       cy: point.y,
@@ -769,20 +729,12 @@ function renderTachometer({ teamMarkers, correctValue, showCorrect }) {
     createSvgEl("circle", {
       cx: TACHO.cx,
       cy: TACHO.cy,
-      r: 10,
+      r: 13,
       class: "tacho-hub"
     })
   );
 
-  svg.appendChild(
-    createSvgEl("circle", {
-      cx: TACHO.cx,
-      cy: TACHO.cy,
-      r: 4,
-      class: "tacho-hub-center"
-    })
-  );
-
+  root.appendChild(face);
   root.appendChild(svg);
 
   requestAnimationFrame(() => {
@@ -801,22 +753,30 @@ function createNeedleGroup(className, value) {
   });
   group.dataset.target = String(value);
 
+  const baseY = TACHO.cy + 7;
+  const tipY = TACHO.cy - TACHO.needleLen;
+  const points = [
+    `${TACHO.cx - 6},${baseY}`,
+    `${TACHO.cx + 6},${baseY}`,
+    `${TACHO.cx + 1.2},${tipY + 10}`,
+    `${TACHO.cx},${tipY}`,
+    `${TACHO.cx - 1.2},${tipY + 10}`
+  ].join(" ");
+
   group.appendChild(
-    createSvgEl("line", {
-      x1: TACHO.cx,
-      y1: TACHO.cy,
-      x2: TACHO.cx,
-      y2: TACHO.cy - TACHO.needleLen,
-      class: "tacho-needle-line"
+    createSvgEl("polygon", {
+      points,
+      class: "tacho-needle-body"
     })
   );
 
+  // 針の反対側に少しはみ出す重り
   group.appendChild(
     createSvgEl("circle", {
       cx: TACHO.cx,
-      cy: TACHO.cy - TACHO.needleLen + 6,
-      r: 4,
-      class: "tacho-needle-tip"
+      cy: TACHO.cy + 13,
+      r: 5,
+      class: "tacho-needle-counterweight"
     })
   );
 
