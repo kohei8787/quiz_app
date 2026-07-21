@@ -55,6 +55,12 @@ const OPTION_BADGE_SRC = {
   D: "/data/image/components/square-d.png"
 };
 
+const QUESTION4_OPTION_IMAGE_FALLBACK = {
+  A: "/data/image/components/c10",
+  B: "/data/image/components/r34.jpg",
+  C: "/data/image/components/v37.jpg"
+};
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -92,12 +98,15 @@ function renderSurveyCard(question) {
     surveyQuestionText.textContent = "";
     surveyOptionsList.innerHTML = "";
     surveyOptionsList.classList.remove("is-cols-2");
+    surveyOptionsList.classList.remove("is-photo-mode");
     return;
   }
 
   surveyCard.hidden = false;
   surveyQuestionText.textContent = question.surveyQuestion;
-  surveyOptionsList.classList.toggle("is-cols-2", options.length >= 3);
+  const isQuestion4 = Number(question.id) === 4;
+  surveyOptionsList.classList.toggle("is-photo-mode", isQuestion4);
+  surveyOptionsList.classList.toggle("is-cols-2", !isQuestion4 && options.length >= 3);
   const focusKeys = new Set(
     (Array.isArray(question.focusOptions)
       ? question.focusOptions
@@ -110,35 +119,44 @@ function renderSurveyCard(question) {
     .map((option) => {
       const key = String(option.key || "").toUpperCase();
       const isFocus = focusKeys.has(key);
+      const optionImage =
+        (option && option.image) ||
+        (isQuestion4 ? QUESTION4_OPTION_IMAGE_FALLBACK[key] : null);
       return `
-        <li class="survey-option${isFocus ? " is-focus" : ""}">
+        <li class="survey-option${isFocus ? " is-focus" : ""}${optionImage ? " has-option-image" : ""}">
           ${optionBadgeHtml(key)}
+          ${optionImage
+            ? `<img class="survey-option-image" src="${escapeHtml(optionImage)}" alt="${escapeHtml(option.label || key)}" onerror="this.style.display='none'; this.closest('li')?.classList.remove('has-option-image');" />`
+            : ""
+          }
           <span class="survey-option-label">${escapeHtml(option.label || "")}</span>
         </li>
       `;
     })
     .join("");
 
-  // CSSの競合やキャッシュ差分があっても、選択肢は常に縦中央にそろえる
-  surveyOptionsList.querySelectorAll(".survey-option").forEach((item) => {
-    item.style.alignItems = "center";
+  if (!isQuestion4) {
+    // CSSの競合やキャッシュ差分があっても、選択肢は常に縦中央にそろえる
+    surveyOptionsList.querySelectorAll(".survey-option").forEach((item) => {
+      item.style.alignItems = "center";
 
-    const badge = item.querySelector(".option-badge");
-    if (badge) {
-      badge.style.alignSelf = "center";
-      badge.style.marginTop = "0";
-    }
+      const badge = item.querySelector(".option-badge");
+      if (badge) {
+        badge.style.alignSelf = "center";
+        badge.style.marginTop = "0";
+      }
 
-    const label = item.querySelector(".survey-option-label");
-    if (label) {
-      label.style.alignSelf = "center";
-      label.style.display = "block";
-      label.style.minHeight = "clamp(40px, 4.5vw, 56px)";
-    }
-  });
+      const label = item.querySelector(".survey-option-label");
+      if (label) {
+        label.style.alignSelf = "center";
+        label.style.display = "block";
+        label.style.minHeight = "clamp(40px, 4.5vw, 56px)";
+      }
+    });
 
-  // 長い選択肢は最大2行に収まるようフォントを縮小（それでも足りなければ折り返して全文表示）
-  requestAnimationFrame(fitSurveyOptionLabels);
+    // 長い選択肢は最大2行に収まるようフォントを縮小（それでも足りなければ折り返して全文表示）
+    requestAnimationFrame(fitSurveyOptionLabels);
+  }
 }
 
 function fitSurveyOptionLabels() {
