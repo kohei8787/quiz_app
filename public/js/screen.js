@@ -366,7 +366,7 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "correct_revealed") {
     statusEl.textContent = "正解発表";
   } else if (state.status === "survey_results") {
-    statusEl.textContent = "アンケート結果公開";
+    statusEl.textContent = "アンケート結果";
   } else if (state.status === "ranking_revealed") {
     statusEl.textContent = "順位発表";
     rankingTitle.textContent = "順位発表";
