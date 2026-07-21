@@ -17,6 +17,8 @@ const surveyCard = document.getElementById("surveyCard");
 const surveyQuestionText = document.getElementById("surveyQuestionText");
 const surveyOptionsList = document.getElementById("surveyOptionsList");
 const resultView = document.getElementById("resultView");
+const resultTeamListLeft = document.getElementById("resultTeamListLeft");
+const resultTeamListRight = document.getElementById("resultTeamListRight");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
 const finishedView = document.getElementById("finishedView");
@@ -25,6 +27,26 @@ const resultsView = document.getElementById("resultsView");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+
+// チーム識別色（メーター上のドット・左右凡例で共通）
+const TEAM_COLORS = [
+  "#f97316",
+  "#3b82f6",
+  "#a855f7",
+  "#ec4899",
+  "#14b8a6",
+  "#eab308",
+  "#ef4444",
+  "#06b6d4",
+  "#8b5cf6",
+  "#f59e0b",
+  "#84cc16",
+  "#f43f5e"
+];
+
+function getTeamColor(index) {
+  return TEAM_COLORS[index % TEAM_COLORS.length];
+}
 
 const OPTION_BADGE_SRC = {
   A: "/data/image/components/square-a.png",
@@ -202,6 +224,9 @@ window.addEventListener("resize", () => {
   if (document.body.classList.contains("waiting-background")) {
     scheduleFitTeamList();
   }
+  if (resultView.style.display !== "none") {
+    scheduleFitResultTeamLegends();
+  }
   if (!surveyCard.hidden) {
     fitSurveyOptionLabels();
   }
@@ -249,13 +274,13 @@ socket.on("stateUpdated", (state) => {
 
   waitingSection.style.display = showWaiting ? "flex" : "none";
   questionView.style.display = showQuestionView ? "flex" : "none";
-  resultView.style.display = showResultView ? "block" : "none";
+  resultView.style.display = showResultView ? "flex" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
   resultsView.style.display = showResultsView ? "block" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
-  // 出題中はヘッダー内に「第n問」とタイマーを出すため、上部statusは隠す
-  statusEl.style.display = showQuestionView ? "none" : "";
+  // 出題中と回答公開・正解発表中はカード側に見出しがあるため、上部statusは隠す
+  statusEl.style.display = showQuestionView || showResultView ? "none" : "";
 
   // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
   const useEventBackground =
@@ -269,6 +294,7 @@ socket.on("stateUpdated", (state) => {
     state.status === "results_announced";
   document.body.classList.toggle("waiting-background", showWaiting);
   document.body.classList.toggle("event-background", useEventBackground);
+  document.body.classList.toggle("result-reveal-active", showResultView);
 
   if (showWaiting) {
     scheduleFitTeamList();
@@ -285,7 +311,10 @@ socket.on("stateUpdated", (state) => {
     questionTitle.textContent = "出題待ち";
     timerValue.textContent = "--:--";
     correctAnswerText.textContent = "正解: --";
+    correctAnswerText.hidden = true;
     gaugeContainer.innerHTML = "";
+    resultTeamListLeft.innerHTML = "";
+    resultTeamListRight.innerHTML = "";
   } else if (state.status === "question" || state.status === "answer_closed") {
     questionTitle.textContent = state.isPractice
       ? "例題"
@@ -327,16 +356,6 @@ socket.on("stateUpdated", (state) => {
     }
 
     timerValue.textContent = formatRemainingTime(state.remainingTime);
-
-    // 例題では正解を表示しない
-    if (state.isPractice) {
-      correctAnswerText.textContent = "例題（正解発表なし）";
-    } else {
-      correctAnswerText.textContent =
-        state.correctAnswer !== null
-          ? `正解: ${state.correctAnswer}%`
-          : "正解: --";
-    }
   }
 
   if (state.status === "answers_revealed") {
@@ -347,6 +366,7 @@ socket.on("stateUpdated", (state) => {
 
   if (showResultView) {
     renderGauge(state);
+    scheduleFitResultTeamLegends();
   }
 
   // 途中の順位発表
@@ -467,77 +487,375 @@ function renderPodium(state, shouldShow) {
   });
 }
 
-function renderGauge(state) {
-  gaugeContainer.innerHTML = "";
+function clampAnswer(value) {
+  return Math.max(0, Math.min(100, Math.round(Number(value))));
+}
 
-  if (!state.revealedAnswers || state.revealedAnswers.length === 0) {
+const RESULT_LEGEND_MAX_FONT_PX = 28;
+const RESULT_LEGEND_MAX_ITEM_H = 64;
+const RESULT_LEGEND_MIN_FONT_PX = 12;
+const RESULT_LEGEND_MIN_ITEM_H = 28;
+
+function scheduleFitResultTeamLegends() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(fitResultTeamLegends);
+  });
+}
+
+function fitResultTeamLegends() {
+  if (resultView.style.display === "none") {
     return;
   }
 
-  const showCorrectPin = state.status === "correct_revealed";
-  const showDetails = state.status === "answers_revealed";
-  const correctValue = state.correctAnswer !== null ? state.correctAnswer : 0;
-
-  const wrapper = document.createElement("div");
-  wrapper.className = "gauge-track-wrapper";
-
-  const track = document.createElement("div");
-  track.className = "gauge-track";
-
-  const fill = document.createElement("div");
-  fill.className = "gauge-fill";
-  fill.style.width = "100%";
-  track.appendChild(fill);
-
-  wrapper.appendChild(track);
-
-  state.revealedAnswers.forEach((item) => {
-    if (item.answer === null) {
-      return;
-    }
-
-    const percent = Math.max(0, Math.min(100, item.answer));
-    const pin = document.createElement("div");
-    pin.className = "gauge-pin";
-    pin.style.left = `${percent}%`;
-    wrapper.appendChild(pin);
-
-    if (showDetails) {
-      const label = document.createElement("div");
-      label.className = "gauge-label";
-      label.textContent = item.teamName;
-      label.style.left = `${percent}%`;
-      wrapper.appendChild(label);
-
-      const row = document.createElement("div");
-      row.className = "result-team-row";
-      row.innerHTML = `<span>${item.teamName}</span><span>${item.answer}%</span>`;
-      gaugeContainer.appendChild(row);
-    }
-  });
-
-  if (showCorrectPin) {
-    const correctPin = document.createElement("div");
-    correctPin.className = "gauge-pin correct";
-    correctPin.style.left = "0%";
-
-    const correctLabel = document.createElement("div");
-    correctLabel.className = "gauge-label";
-    correctLabel.textContent = `正解: ${correctValue}%`;
-    correctLabel.style.left = `${correctValue}%`;
-
-    wrapper.appendChild(correctPin);
-    wrapper.appendChild(correctLabel);
-
-    requestAnimationFrame(() => {
-      correctPin.style.left = `${correctValue}%`;
-    });
+  const lists = [resultTeamListLeft, resultTeamListRight].filter(Boolean);
+  const items = lists.flatMap((list) => Array.from(list.children));
+  if (items.length === 0) {
+    return;
   }
 
-  gaugeContainer.appendChild(wrapper);
+  const body = resultView.querySelector(".result-reveal-body");
+  if (!body) {
+    return;
+  }
 
-  const scale = document.createElement("div");
-  scale.className = "gauge-scale";
-  scale.innerHTML = "<span>0%</span><span>50%</span><span>100%</span>";
-  gaugeContainer.appendChild(scale);
+  const availableHeight = Math.max(
+    0,
+    Math.min(...lists.map((list) => list.clientHeight).filter((h) => h > 0))
+  );
+  if (availableHeight <= 0) {
+    return;
+  }
+
+  const maxCount = Math.max(
+    resultTeamListLeft.children.length,
+    resultTeamListRight.children.length,
+    1
+  );
+  const gap = Math.max(
+    4,
+    Math.min(14, Math.floor(availableHeight / Math.max(12, maxCount * 3)))
+  );
+  const itemH = Math.max(
+    RESULT_LEGEND_MIN_ITEM_H,
+    Math.min(
+      RESULT_LEGEND_MAX_ITEM_H,
+      Math.floor((availableHeight - gap * Math.max(0, maxCount - 1)) / maxCount)
+    )
+  );
+  const fontPx = Math.max(
+    RESULT_LEGEND_MIN_FONT_PX,
+    Math.min(RESULT_LEGEND_MAX_FONT_PX, Math.floor(itemH * 0.42))
+  );
+  const swatch = Math.max(10, Math.min(22, Math.floor(itemH * 0.36)));
+  const padY = Math.max(2, Math.min(12, Math.floor(itemH * 0.12)));
+  const padX = Math.max(6, Math.min(14, Math.floor(itemH * 0.2)));
+  const radius = Math.max(6, Math.min(12, Math.floor(itemH * 0.18)));
+
+  resultView.style.setProperty("--result-legend-gap", `${gap}px`);
+  resultView.style.setProperty("--result-legend-font", `${fontPx}px`);
+  resultView.style.setProperty("--result-legend-item-h", `${itemH}px`);
+  resultView.style.setProperty("--result-legend-swatch", `${swatch}px`);
+  resultView.style.setProperty("--result-legend-pad-y", `${padY}px`);
+  resultView.style.setProperty("--result-legend-pad-x", `${padX}px`);
+  resultView.style.setProperty("--result-legend-radius", `${radius}px`);
+}
+
+function renderTeamLegend(listEl, teams, options = {}) {
+  const showCorrect = Boolean(options.showCorrect);
+  const correctValue =
+    options.correctValue !== null && options.correctValue !== undefined
+      ? clampAnswer(options.correctValue)
+      : null;
+
+  listEl.innerHTML = "";
+  teams.forEach((team) => {
+    const li = document.createElement("li");
+    li.className = "result-team-legend-item";
+    const hasAnswer = team.answer !== null && team.answer !== undefined;
+
+    if (!hasAnswer) {
+      li.classList.add("is-unanswered");
+    }
+    if (showCorrect && hasAnswer && correctValue !== null && team.answer === correctValue) {
+      li.classList.add("is-correct");
+    }
+
+    const swatch = document.createElement("span");
+    swatch.className = "result-team-swatch";
+    swatch.style.background = team.color;
+    swatch.setAttribute("aria-hidden", "true");
+
+    const name = document.createElement("span");
+    name.className = "result-team-name";
+    name.textContent = team.teamName || "";
+    if ((team.teamName || "").length >= 13) {
+      name.classList.add("is-long");
+    }
+
+    const answer = document.createElement("span");
+    answer.className = "result-team-answer";
+    answer.textContent = hasAnswer ? `${team.answer}%` : "--%";
+
+    li.appendChild(swatch);
+    li.appendChild(name);
+    li.appendChild(answer);
+    listEl.appendChild(li);
+  });
+}
+
+function renderGauge(state) {
+  gaugeContainer.innerHTML = "";
+  resultTeamListLeft.innerHTML = "";
+  resultTeamListRight.innerHTML = "";
+
+  const revealedAnswers = Array.isArray(state.revealedAnswers)
+    ? state.revealedAnswers
+    : [];
+
+  if (revealedAnswers.length === 0) {
+    correctAnswerText.hidden = true;
+    return;
+  }
+
+  const showCorrect = state.status === "correct_revealed";
+  const correctValue =
+    state.correctAnswer !== null && state.correctAnswer !== undefined
+      ? clampAnswer(state.correctAnswer)
+      : null;
+
+  const teams = revealedAnswers.map((item, index) => ({
+    teamName: item.teamName,
+    answer:
+      item.answer !== null && item.answer !== undefined
+        ? clampAnswer(item.answer)
+        : null,
+    color: getTeamColor(index)
+  }));
+
+  const mid = Math.ceil(teams.length / 2);
+  renderTeamLegend(resultTeamListLeft, teams.slice(0, mid), {
+    showCorrect,
+    correctValue
+  });
+  renderTeamLegend(resultTeamListRight, teams.slice(mid), {
+    showCorrect,
+    correctValue
+  });
+
+  const teamMarkers = teams
+    .filter((team) => team.answer !== null)
+    .map((team) => ({
+      percent: team.answer,
+      color: team.color
+    }));
+
+  const tacho = renderTachometer({
+    teamMarkers,
+    correctValue: showCorrect ? correctValue : null,
+    showCorrect
+  });
+  gaugeContainer.appendChild(tacho.root);
+
+  if (state.isPractice) {
+    correctAnswerText.textContent = "例題（正解発表なし）";
+    correctAnswerText.hidden = false;
+  } else if (showCorrect && correctValue !== null) {
+    correctAnswerText.textContent = `正解: ${correctValue}%`;
+    correctAnswerText.hidden = false;
+  } else {
+    correctAnswerText.textContent = "正解: --";
+    correctAnswerText.hidden = true;
+  }
+}
+
+const TACHO = {
+  cx: 150,
+  cy: 150,
+  // 半径は画像幅(300)の半分
+  radius: 150,
+  needleLen: 138
+};
+
+const TACHO_FACE_SRC = "/data/image/components/meter-black.png";
+const TACHO_START_DEG = 240;
+const TACHO_END_DEG = 0;
+
+function percentToRad(percent) {
+  const clamped = Math.max(0, Math.min(100, Number(percent)));
+  const deg =
+    TACHO_START_DEG +
+    (TACHO_END_DEG - TACHO_START_DEG) * (clamped / 100);
+  return (deg * Math.PI) / 180;
+}
+
+function tachoPoint(percent, radius = TACHO.radius) {
+  const rad = percentToRad(percent);
+  return {
+    x: TACHO.cx + radius * Math.cos(rad),
+    y: TACHO.cy - radius * Math.sin(rad)
+  };
+}
+
+function valueToRotateDeg(value) {
+  const clamped = Math.max(0, Math.min(100, Number(value)));
+  const deg =
+    TACHO_START_DEG +
+    (TACHO_END_DEG - TACHO_START_DEG) * (clamped / 100);
+  // 針の初期向きは「上」なので、右0°・反時計回り基準の角度を
+  // CSS回転角（時計回り正）へ変換する。
+  return 90 - deg;
+}
+
+function createSvgEl(tag, attrs = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.entries(attrs).forEach(([key, val]) => {
+    el.setAttribute(key, String(val));
+  });
+  return el;
+}
+
+function renderTachometer({ teamMarkers, correctValue, showCorrect }) {
+  const root = document.createElement("div");
+  root.className = "tacho-gauge";
+
+  const face = document.createElement("img");
+  face.className = "tacho-face";
+  face.src = TACHO_FACE_SRC;
+  face.alt = "回答タコメーター";
+
+  const svg = createSvgEl("svg", {
+    viewBox: "0 0 300 300",
+    class: "tacho-overlay",
+    role: "presentation",
+    "aria-hidden": "true"
+  });
+
+  teamMarkers.forEach((marker) => {
+    const point = tachoPoint(marker.percent, TACHO.radius);
+    const rad = percentToRad(marker.percent);
+    // 円周上の法線方向（中心->点）に短い棒を置く
+    const nx = Math.cos(rad);
+    const ny = -Math.sin(rad);
+    const inset = 4;
+    const halfLen = 7;
+    const cx = point.x - nx * inset;
+    const cy = point.y - ny * inset;
+
+    const outline = createSvgEl("line", {
+      x1: cx - nx * halfLen,
+      y1: cy - ny * halfLen,
+      x2: cx + nx * halfLen,
+      y2: cy + ny * halfLen,
+      class: "tacho-team-marker-outline"
+    });
+    const bar = createSvgEl("line", {
+      x1: cx - nx * halfLen,
+      y1: cy - ny * halfLen,
+      x2: cx + nx * halfLen,
+      y2: cy + ny * halfLen,
+      class: "tacho-team-marker"
+    });
+    if (marker.color) {
+      bar.style.stroke = marker.color;
+    }
+    svg.appendChild(outline);
+    svg.appendChild(bar);
+  });
+
+  if (showCorrect && correctValue !== null) {
+    svg.appendChild(
+      createNeedleGroup("tacho-needle tacho-needle-correct", correctValue)
+    );
+  }
+
+  svg.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy,
+      r: 13,
+      class: "tacho-hub"
+    })
+  );
+
+  root.appendChild(face);
+  root.appendChild(svg);
+
+  requestAnimationFrame(() => {
+    root.querySelectorAll(".tacho-needle").forEach((needle) => {
+      const target = Number(needle.dataset.target);
+      if (needle.classList.contains("tacho-needle-correct")) {
+        animateCorrectNeedle(needle, target);
+        return;
+      }
+      needle.style.transform = `rotate(${valueToRotateDeg(target)}deg)`;
+    });
+  });
+
+  return { root };
+}
+
+function animateCorrectNeedle(needle, targetValue) {
+  const target = clampAnswer(targetValue);
+  const pivotValue = 85;
+  const pivotDeg = valueToRotateDeg(pivotValue);
+  const targetDeg = valueToRotateDeg(target);
+
+  needle.style.transform = `rotate(${valueToRotateDeg(0)}deg)`;
+
+  // 正解が85%以下: 85%まで進んでから正解値へ戻る
+  if (target <= pivotValue) {
+    needle.style.transition = "transform 1200ms cubic-bezier(0.52, 0.02, 0.32, 1)";
+    needle.style.transform = `rotate(${pivotDeg}deg)`;
+
+    setTimeout(() => {
+      needle.style.transition = "transform 620ms cubic-bezier(0.33, 0, 0.67, 1)";
+      needle.style.transform = `rotate(${targetDeg}deg)`;
+    }, 1220);
+    return;
+  }
+
+  // 正解が85%以上: 85%付近で一度ゆっくりになってから正解値へ向かう
+  needle.style.transition = "transform 1350ms cubic-bezier(0.52, 0.02, 0.32, 1)";
+  needle.style.transform = `rotate(${pivotDeg}deg)`;
+
+  setTimeout(() => {
+    needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
+    needle.style.transform = `rotate(${targetDeg}deg)`;
+  }, 1370);
+}
+
+function createNeedleGroup(className, value) {
+  const group = createSvgEl("g", {
+    class: `${className} tacho-needle`
+  });
+  group.dataset.target = String(value);
+
+  const baseY = TACHO.cy + 7;
+  const tipY = TACHO.cy - TACHO.needleLen;
+  const points = [
+    `${TACHO.cx - 6},${baseY}`,
+    `${TACHO.cx + 6},${baseY}`,
+    `${TACHO.cx + 1.2},${tipY + 10}`,
+    `${TACHO.cx},${tipY}`,
+    `${TACHO.cx - 1.2},${tipY + 10}`
+  ].join(" ");
+
+  group.appendChild(
+    createSvgEl("polygon", {
+      points,
+      class: "tacho-needle-body"
+    })
+  );
+
+  // 針の反対側に少しはみ出す重り
+  group.appendChild(
+    createSvgEl("circle", {
+      cx: TACHO.cx,
+      cy: TACHO.cy + 13,
+      r: 5,
+      class: "tacho-needle-counterweight"
+    })
+  );
+
+  return group;
 }
