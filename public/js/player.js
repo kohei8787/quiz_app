@@ -619,7 +619,7 @@ socket.on("stateUpdated", (state) => {
   }
 
   questionView.style.display = showQuestionView ? "block" : "none";
-  resultView.style.display = showResultView ? "block" : "none";
+  resultView.style.display = showResultView ? "flex" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
   resultsView.style.display = showResultsView ? "block" : "none";
@@ -1024,12 +1024,20 @@ function renderRevealedAnswersList(state) {
 const TACHO = {
   cx: 150,
   cy: 150,
-  radius: 108,
-  needleLen: 92
+  radius: 150,
+  needleLen: 138
 };
 
+const TACHO_FACE_SRC = "/data/image/components/meter-black.png";
+const TACHO_START_DEG = 240;
+const TACHO_END_DEG = 0;
+
 function percentToRad(percent) {
-  return Math.PI * (1 - percent / 100);
+  const clamped = Math.max(0, Math.min(100, Number(percent)));
+  const deg =
+    TACHO_START_DEG +
+    (TACHO_END_DEG - TACHO_START_DEG) * (clamped / 100);
+  return (deg * Math.PI) / 180;
 }
 
 function tachoPoint(percent, radius = TACHO.radius) {
@@ -1041,7 +1049,11 @@ function tachoPoint(percent, radius = TACHO.radius) {
 }
 
 function valueToRotateDeg(value) {
-  return value * 1.8 - 90;
+  const clamped = Math.max(0, Math.min(100, Number(value)));
+  const deg =
+    TACHO_START_DEG +
+    (TACHO_END_DEG - TACHO_START_DEG) * (clamped / 100);
+  return 90 - deg;
 }
 
 function createSvgEl(tag, attrs = {}) {
@@ -1056,72 +1068,16 @@ function renderTachometer({ teamMarkers, myAnswer, correctValue, showCorrect }) 
   const root = document.createElement("div");
   root.className = "tacho-gauge";
 
+  const face = document.createElement("img");
+  face.className = "tacho-face";
+  face.src = TACHO_FACE_SRC;
+  face.alt = "回答タコメーター";
+
   const svg = createSvgEl("svg", {
-    viewBox: "0 0 300 180",
-    class: "tacho-svg",
-    role: "img",
-    "aria-label": "回答タコメーター"
-  });
-
-  const defs = createSvgEl("defs");
-  const gradient = createSvgEl("linearGradient", {
-    id: "tachoArcGradient",
-    x1: "0%",
-    y1: "0%",
-    x2: "100%",
-    y2: "0%"
-  });
-  gradient.appendChild(
-    createSvgEl("stop", { offset: "0%", "stop-color": "#93c5fd" })
-  );
-  gradient.appendChild(
-    createSvgEl("stop", { offset: "100%", "stop-color": "#2563eb" })
-  );
-  defs.appendChild(gradient);
-  svg.appendChild(defs);
-
-  const arcStart = tachoPoint(0, TACHO.radius);
-  const arcEnd = tachoPoint(100, TACHO.radius);
-
-  svg.appendChild(
-    createSvgEl("path", {
-      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
-      class: "tacho-arc-bg"
-    })
-  );
-
-  svg.appendChild(
-    createSvgEl("path", {
-      d: `M ${arcStart.x} ${arcStart.y} A ${TACHO.radius} ${TACHO.radius} 0 0 1 ${arcEnd.x} ${arcEnd.y}`,
-      class: "tacho-arc-fill"
-    })
-  );
-
-  [0, 25, 50, 75, 100].forEach((tick) => {
-    const outer = tachoPoint(tick, TACHO.radius);
-    const inner = tachoPoint(tick, TACHO.radius - (tick % 50 === 0 ? 14 : 8));
-    svg.appendChild(
-      createSvgEl("line", {
-        x1: inner.x,
-        y1: inner.y,
-        x2: outer.x,
-        y2: outer.y,
-        class: tick % 50 === 0 ? "tacho-tick-major" : "tacho-tick-minor"
-      })
-    );
-
-    if (tick % 50 === 0) {
-      const labelPoint = tachoPoint(tick, TACHO.radius - 24);
-      const label = createSvgEl("text", {
-        x: labelPoint.x,
-        y: labelPoint.y,
-        class: "tacho-scale-label",
-        "text-anchor": "middle",
-        "dominant-baseline": "middle"
-      });
-      label.textContent = `${tick}`;
-      svg.appendChild(label);
-    }
+    viewBox: "0 0 300 300",
+    class: "tacho-overlay",
+    role: "presentation",
+    "aria-hidden": "true"
   });
 
   teamMarkers.forEach((marker) => {
@@ -1129,13 +1085,42 @@ function renderTachometer({ teamMarkers, myAnswer, correctValue, showCorrect }) 
       return;
     }
 
-    const point = tachoPoint(marker.percent, TACHO.radius - 2);
+    const point = tachoPoint(marker.percent, TACHO.radius);
+    const rad = percentToRad(marker.percent);
+    const nx = Math.cos(rad);
+    const ny = -Math.sin(rad);
+    const inset = 4;
+    const halfLen = 7;
+    const cx = point.x - nx * inset;
+    const cy = point.y - ny * inset;
+    const angleDeg = (Math.atan2(ny, nx) * 180) / Math.PI;
+    const outerH = 5.4;
+    const innerH = 4.2;
+    const width = halfLen * 2;
+
     svg.appendChild(
-      createSvgEl("circle", {
-        cx: point.x,
-        cy: point.y,
-        r: 5,
-        class: "tacho-team-dot"
+      createSvgEl("rect", {
+        x: cx - width / 2,
+        y: cy - outerH / 2,
+        width,
+        height: outerH,
+        rx: 1.8,
+        ry: 1.8,
+        class: "tacho-team-marker-outline",
+        transform: `rotate(${angleDeg} ${cx} ${cy})`
+      })
+    );
+
+    svg.appendChild(
+      createSvgEl("rect", {
+        x: cx - width / 2,
+        y: cy - innerH / 2,
+        width,
+        height: innerH,
+        rx: 1.2,
+        ry: 1.2,
+        class: "tacho-team-marker",
+        transform: `rotate(${angleDeg} ${cx} ${cy})`
       })
     );
   });
@@ -1157,30 +1142,54 @@ function renderTachometer({ teamMarkers, myAnswer, correctValue, showCorrect }) 
     createSvgEl("circle", {
       cx: TACHO.cx,
       cy: TACHO.cy,
-      r: 10,
+      r: 13,
       class: "tacho-hub"
     })
   );
 
-  svg.appendChild(
-    createSvgEl("circle", {
-      cx: TACHO.cx,
-      cy: TACHO.cy,
-      r: 4,
-      class: "tacho-hub-center"
-    })
-  );
-
+  root.appendChild(face);
   root.appendChild(svg);
 
   requestAnimationFrame(() => {
     root.querySelectorAll(".tacho-needle").forEach((needle) => {
       const target = Number(needle.dataset.target);
+      if (needle.classList.contains("tacho-needle-correct")) {
+        animateCorrectNeedle(needle, target);
+        return;
+      }
       needle.style.transform = `rotate(${valueToRotateDeg(target)}deg)`;
     });
   });
 
   return { root };
+}
+
+function animateCorrectNeedle(needle, targetValue) {
+  const target = clampAnswer(targetValue);
+  const pivotValue = 85;
+  const pivotDeg = valueToRotateDeg(pivotValue);
+  const targetDeg = valueToRotateDeg(target);
+
+  needle.style.transform = `rotate(${valueToRotateDeg(0)}deg)`;
+
+  if (target <= pivotValue) {
+    needle.style.transition = "transform 1200ms cubic-bezier(0.52, 0.02, 0.32, 1)";
+    needle.style.transform = `rotate(${pivotDeg}deg)`;
+
+    setTimeout(() => {
+      needle.style.transition = "transform 620ms cubic-bezier(0.33, 0, 0.67, 1)";
+      needle.style.transform = `rotate(${targetDeg}deg)`;
+    }, 1220);
+    return;
+  }
+
+  needle.style.transition = "transform 1350ms cubic-bezier(0.52, 0.02, 0.32, 1)";
+  needle.style.transform = `rotate(${pivotDeg}deg)`;
+
+  setTimeout(() => {
+    needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
+    needle.style.transform = `rotate(${targetDeg}deg)`;
+  }, 1370);
 }
 
 function createNeedleGroup(className, value) {
@@ -1189,22 +1198,29 @@ function createNeedleGroup(className, value) {
   });
   group.dataset.target = String(value);
 
+  const baseY = TACHO.cy + 7;
+  const tipY = TACHO.cy - TACHO.needleLen;
+  const points = [
+    `${TACHO.cx - 6},${baseY}`,
+    `${TACHO.cx + 6},${baseY}`,
+    `${TACHO.cx + 1.2},${tipY + 10}`,
+    `${TACHO.cx},${tipY}`,
+    `${TACHO.cx - 1.2},${tipY + 10}`
+  ].join(" ");
+
   group.appendChild(
-    createSvgEl("line", {
-      x1: TACHO.cx,
-      y1: TACHO.cy,
-      x2: TACHO.cx,
-      y2: TACHO.cy - TACHO.needleLen,
-      class: "tacho-needle-line"
+    createSvgEl("polygon", {
+      points,
+      class: "tacho-needle-body"
     })
   );
 
   group.appendChild(
     createSvgEl("circle", {
       cx: TACHO.cx,
-      cy: TACHO.cy - TACHO.needleLen + 6,
-      r: 4,
-      class: "tacho-needle-tip"
+      cy: TACHO.cy + 13,
+      r: 5,
+      class: "tacho-needle-counterweight"
     })
   );
 
