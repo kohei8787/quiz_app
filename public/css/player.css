@@ -1410,7 +1410,8 @@ input:disabled {
 }
 
 .podium-place {
-  flex: 1 1 0;
+  flex: 0 0 clamp(88px, 30vw, 130px);
+  width: clamp(88px, 30vw, 130px);
   min-width: 0;
   max-width: 130px;
   opacity: 0;
@@ -1586,7 +1587,9 @@ input:disabled {
   }
 
   .podium-place {
-    max-width: none;
+    flex-basis: clamp(82px, 29vw, 116px);
+    width: clamp(82px, 29vw, 116px);
+    max-width: 116px;
   }
 
   .podium-face--front {
