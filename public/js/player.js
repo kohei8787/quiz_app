@@ -54,6 +54,8 @@ const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
 const waitingMessage = document.querySelector(".waiting-message");
 const backgroundVideo = document.querySelector(".background-video-finished");
+let revealSummaryTimer = null;
+let revealAnswersHighlightTimer = null;
 
 const OPTION_BADGE_SRC = {
   A: "/data/image/components/square-a.png",
@@ -892,6 +894,11 @@ function renderPodium(state, shouldShow) {
 }
 
 function renderGauge(state, myTeam) {
+  if (revealSummaryTimer) {
+    clearTimeout(revealSummaryTimer);
+    revealSummaryTimer = null;
+  }
+
   gaugeContainer.innerHTML = "";
 
   if (!state.revealedAnswers || state.revealedAnswers.length === 0) {
@@ -964,6 +971,34 @@ function renderGauge(state, myTeam) {
   if (summaryMyAnswer) {
     summaryMyAnswer.textContent = answerText;
   }
+  const nextCurrentScoreText = myTeam ? `${myTeam.score} pt` : "-- pt";
+
+  if (showCorrect && correctValue !== null) {
+    if (summaryCorrect) {
+      summaryCorrect.textContent = "--%";
+    }
+    if (summaryScore) {
+      summaryScore.textContent = "-- pt";
+    }
+    if (summaryCurrentScore) {
+      summaryCurrentScore.textContent = "-- pt";
+    }
+
+    revealSummaryTimer = setTimeout(() => {
+      if (summaryCorrect) {
+        summaryCorrect.textContent = correctText;
+      }
+      if (summaryScore) {
+        summaryScore.textContent = questionScoreText;
+      }
+      if (summaryCurrentScore) {
+        summaryCurrentScore.textContent = nextCurrentScoreText;
+      }
+      revealSummaryTimer = null;
+    }, getCorrectNeedleRevealDuration(correctValue));
+    return;
+  }
+
   if (summaryCorrect) {
     summaryCorrect.textContent = correctText;
   }
@@ -971,13 +1006,18 @@ function renderGauge(state, myTeam) {
     summaryScore.textContent = questionScoreText;
   }
   if (summaryCurrentScore) {
-    summaryCurrentScore.textContent = myTeam ? `${myTeam.score} pt` : "-- pt";
+    summaryCurrentScore.textContent = nextCurrentScoreText;
   }
 }
 
-function renderRevealedAnswersList(state) {
+function renderRevealedAnswersList(state, forceCorrectHighlight = false) {
   if (!revealedAnswersList) {
     return;
+  }
+
+  if (revealAnswersHighlightTimer) {
+    clearTimeout(revealAnswersHighlightTimer);
+    revealAnswersHighlightTimer = null;
   }
 
   revealedAnswersList.innerHTML = "";
@@ -998,6 +1038,9 @@ function renderRevealedAnswersList(state) {
     state.correctAnswer !== null && state.correctAnswer !== undefined
       ? clampAnswer(state.correctAnswer)
       : null;
+  const showCorrect = state.status === "correct_revealed";
+  const enableCorrectHighlight =
+    !showCorrect || forceCorrectHighlight || correctValue === null;
 
   revealedAnswers.forEach((item) => {
     const li = document.createElement("li");
@@ -1007,6 +1050,7 @@ function renderRevealedAnswersList(state) {
         : "未回答";
     const isOwn = item.teamName === myTeamName;
     const isCorrect =
+      enableCorrectHighlight &&
       correctValue !== null &&
       item.answer !== null &&
       item.answer !== undefined &&
@@ -1015,10 +1059,18 @@ function renderRevealedAnswersList(state) {
     li.className = `revealed-answers-item${isOwn ? " is-own" : ""}${isCorrect ? " is-correct" : ""}`;
     li.innerHTML = `
       <span class="revealed-answers-name">${escapeHtml(item.teamName || "")}${isOwn ? "（あなた）" : ""}</span>
+      ${isCorrect ? '<span class="revealed-answers-badge">ピタリ</span>' : ""}
       <span class="revealed-answers-value">${escapeHtml(percent)}</span>
     `;
     revealedAnswersList.appendChild(li);
   });
+
+  if (showCorrect && correctValue !== null && !forceCorrectHighlight) {
+    revealAnswersHighlightTimer = setTimeout(() => {
+      renderRevealedAnswersList(state, true);
+      revealAnswersHighlightTimer = null;
+    }, getCorrectNeedleRevealDuration(correctValue));
+  }
 }
 
 const TACHO = {
@@ -1190,6 +1242,15 @@ function animateCorrectNeedle(needle, targetValue) {
     needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
     needle.style.transform = `rotate(${targetDeg}deg)`;
   }, 1370);
+}
+
+function getCorrectNeedleRevealDuration(targetValue) {
+  const target = clampAnswer(targetValue);
+  const bufferMs = 420;
+  if (target <= 85) {
+    return 1220 + 620 + bufferMs;
+  }
+  return 1370 + 760 + bufferMs;
 }
 
 function createNeedleGroup(className, value) {

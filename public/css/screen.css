@@ -35,7 +35,7 @@ body {
 
 /* 参加受付中は背景画像を表示 */
 body.waiting-background {
-  background-color: #0d3d28;
+  background-color: #026a51;
 }
 
 body.waiting-background .background-layer {
@@ -48,7 +48,7 @@ body.waiting-background .background-image-waiting {
 
 /* 出題〜結果発表はサイド背景を表示 */
 body.event-background {
-  background-color: #c8ddd4;
+  background-color: #a9e2c5;
 }
 
 body.event-background .background-layer {
@@ -65,7 +65,7 @@ body.event-background #status {
 
 /* イベント終了は last 背景を表示 */
 body.finished-background {
-  background-color: #b8d84a;
+  background-color: #5aee98;
 }
 
 body.finished-background .background-layer {
@@ -461,12 +461,15 @@ body.result-reveal-active .container {
 .result-correct-label {
   margin: 0;
   font-size: clamp(1.4rem, 2.4vw, 2rem);
+  line-height: 1.2;
+  min-height: 1.2em;
   font-weight: 700;
   color: #86efac;
 }
 
 .result-correct-label[hidden] {
-  display: none !important;
+  display: block !important;
+  visibility: hidden;
 }
 
 .result-team-legend {
@@ -502,9 +505,45 @@ body.result-reveal-active .container {
 }
 
 .result-team-legend-item.is-correct {
-  border-color: rgba(34, 197, 94, 0.9);
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35);
+  border-color: #16a34a;
+  background: linear-gradient(90deg, #ecfdf3 0%, #dcfce7 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(22, 163, 74, 0.3),
+    0 0 0 2px rgba(34, 197, 94, 0.18),
+    0 8px 18px rgba(16, 185, 129, 0.22);
+  animation: perfectPulse 1.2s ease-in-out infinite;
+}
+
+.result-team-legend-item.is-correct .result-team-name,
+.result-team-legend-item.is-correct .result-team-answer {
+  color: #14532d;
+}
+
+.result-team-perfect-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.6ch;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: calc(var(--result-legend-font, 1.2rem) * 0.54);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+@keyframes perfectPulse {
+  0%,
+  100% {
+    transform: translateZ(0);
+  }
+  50% {
+    transform: scale(1.015);
+  }
 }
 
 .result-team-swatch {
@@ -734,6 +773,73 @@ body.ranking-revealed-active .container {
 
 body.ranking-revealed-active #status {
   flex: 0 0 auto;
+}
+
+/* 結果発表：タイトル画像を保ちつつ1画面に収める */
+body.results-announced-active {
+  overflow: hidden;
+}
+
+body.results-announced-active .container {
+  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: clamp(4px, 0.8dvh, 12px) clamp(16px, 3vw, 40px) clamp(32px, 4dvh, 56px);
+  box-sizing: border-box;
+}
+
+body.results-announced-active .results-section {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  justify-content: flex-start;
+  gap: clamp(12px, 2dvh, 28px);
+}
+
+body.results-announced-active .results-title-image {
+  width: min(100%, 930px);
+  max-height: clamp(165px, 33dvh, 315px);
+  margin-top: clamp(6px, 1dvh, 14px);
+  object-fit: contain;
+}
+
+body.results-announced-active .results-view {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: clamp(2px, 0.4dvh, 6px);
+  padding-top: clamp(0px, 0.3dvh, 6px);
+  padding-bottom: clamp(0px, 0.3dvh, 6px);
+}
+
+body.results-announced-active .podium {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: clamp(8px, 1.8vw, 24px);
+  padding-top: clamp(0px, 0.3dvh, 4px);
+  padding-bottom: clamp(0px, 0.4dvh, 4px);
+}
+
+body.results-announced-active .podium-crown {
+  font-size: clamp(2.2rem, 5.4dvh, 5.2rem);
+}
+
+body.results-announced-active .podium-place--1 .podium-block {
+  --podium-height: clamp(228px, 35dvh, 326px);
+}
+
+body.results-announced-active .podium-place--2 .podium-block {
+  --podium-height: clamp(182px, 29dvh, 269px);
+}
+
+body.results-announced-active .podium-place--3 .podium-block {
+  --podium-height: clamp(146px, 23dvh, 218px);
 }
 
 /* 順位発表 */

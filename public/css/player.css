@@ -1264,6 +1264,22 @@ input:disabled {
   color: #334155;
 }
 
+.revealed-answers-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.8ch;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 480px) {
   .tacho-center-num {
     font-size: 1.45rem;
@@ -1394,7 +1410,8 @@ input:disabled {
 }
 
 .podium-place {
-  flex: 1 1 0;
+  flex: 0 0 clamp(88px, 30vw, 130px);
+  width: clamp(88px, 30vw, 130px);
   min-width: 0;
   max-width: 130px;
   opacity: 0;
@@ -1570,7 +1587,9 @@ input:disabled {
   }
 
   .podium-place {
-    max-width: none;
+    flex-basis: clamp(82px, 29vw, 116px);
+    width: clamp(82px, 29vw, 116px);
+    max-width: 116px;
   }
 
   .podium-face--front {

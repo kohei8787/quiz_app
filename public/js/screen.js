@@ -25,6 +25,7 @@ const resultsSection = document.getElementById("resultsSection");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+let revealCorrectTextTimer = null;
 const finishedThanks = document.getElementById("finishedThanks");
 
 // チーム識別色（メーター上のドット・左右凡例で共通）
@@ -364,6 +365,7 @@ socket.on("stateUpdated", (state) => {
   document.body.classList.toggle("finished-background", showFinishedView);
   document.body.classList.toggle("result-reveal-active", showResultView);
   document.body.classList.toggle("ranking-revealed-active", showRankingView);
+  document.body.classList.toggle("results-announced-active", showResultsView);
 
   if (showWaiting) {
     scheduleFitTeamList();
@@ -806,11 +808,22 @@ function renderTeamLegend(listEl, teams, options = {}) {
     li.appendChild(swatch);
     li.appendChild(name);
     li.appendChild(answer);
+    if (li.classList.contains("is-correct")) {
+      const perfect = document.createElement("span");
+      perfect.className = "result-team-perfect-badge";
+      perfect.textContent = "ピタリ";
+      li.appendChild(perfect);
+    }
     listEl.appendChild(li);
   });
 }
 
 function renderGauge(state) {
+  if (revealCorrectTextTimer) {
+    clearTimeout(revealCorrectTextTimer);
+    revealCorrectTextTimer = null;
+  }
+
   gaugeContainer.innerHTML = "";
   resultTeamListLeft.innerHTML = "";
   resultTeamListRight.innerHTML = "";
@@ -840,14 +853,19 @@ function renderGauge(state) {
   }));
 
   const mid = Math.ceil(teams.length / 2);
-  renderTeamLegend(resultTeamListLeft, teams.slice(0, mid), {
-    showCorrect,
-    correctValue
-  });
-  renderTeamLegend(resultTeamListRight, teams.slice(mid), {
-    showCorrect,
-    correctValue
-  });
+  const renderLegends = (enableCorrectHighlight) => {
+    renderTeamLegend(resultTeamListLeft, teams.slice(0, mid), {
+      showCorrect: enableCorrectHighlight,
+      correctValue
+    });
+    renderTeamLegend(resultTeamListRight, teams.slice(mid), {
+      showCorrect: enableCorrectHighlight,
+      correctValue
+    });
+  };
+
+  // 正解発表時は、正解%の表示タイミングまではピタリ強調を出さない
+  renderLegends(!showCorrect);
 
   const teamMarkers = teams
     .filter((team) => team.answer !== null)
@@ -867,8 +885,14 @@ function renderGauge(state) {
     correctAnswerText.textContent = "例題（正解発表なし）";
     correctAnswerText.hidden = false;
   } else if (showCorrect && correctValue !== null) {
-    correctAnswerText.textContent = `正解: ${correctValue}%`;
-    correctAnswerText.hidden = false;
+    correctAnswerText.textContent = "正解: --";
+    correctAnswerText.hidden = true;
+    revealCorrectTextTimer = setTimeout(() => {
+      renderLegends(true);
+      correctAnswerText.textContent = `正解: ${correctValue}%`;
+      correctAnswerText.hidden = false;
+      revealCorrectTextTimer = null;
+    }, getCorrectNeedleRevealDuration(correctValue));
   } else {
     correctAnswerText.textContent = "正解: --";
     correctAnswerText.hidden = true;
@@ -1041,6 +1065,15 @@ function animateCorrectNeedle(needle, targetValue) {
     needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
     needle.style.transform = `rotate(${targetDeg}deg)`;
   }, 1370);
+}
+
+function getCorrectNeedleRevealDuration(targetValue) {
+  const target = clampAnswer(targetValue);
+  const bufferMs = 420;
+  if (target <= 85) {
+    return 1220 + 620 + bufferMs;
+  }
+  return 1370 + 760 + bufferMs;
 }
 
 function createNeedleGroup(className, value) {
