@@ -55,6 +55,7 @@ const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin
 const waitingMessage = document.querySelector(".waiting-message");
 const backgroundVideo = document.querySelector(".background-video-finished");
 let revealSummaryTimer = null;
+let revealAnswersHighlightTimer = null;
 
 const OPTION_BADGE_SRC = {
   A: "/data/image/components/square-a.png",
@@ -1009,9 +1010,14 @@ function renderGauge(state, myTeam) {
   }
 }
 
-function renderRevealedAnswersList(state) {
+function renderRevealedAnswersList(state, forceCorrectHighlight = false) {
   if (!revealedAnswersList) {
     return;
+  }
+
+  if (revealAnswersHighlightTimer) {
+    clearTimeout(revealAnswersHighlightTimer);
+    revealAnswersHighlightTimer = null;
   }
 
   revealedAnswersList.innerHTML = "";
@@ -1032,6 +1038,9 @@ function renderRevealedAnswersList(state) {
     state.correctAnswer !== null && state.correctAnswer !== undefined
       ? clampAnswer(state.correctAnswer)
       : null;
+  const showCorrect = state.status === "correct_revealed";
+  const enableCorrectHighlight =
+    !showCorrect || forceCorrectHighlight || correctValue === null;
 
   revealedAnswers.forEach((item) => {
     const li = document.createElement("li");
@@ -1041,6 +1050,7 @@ function renderRevealedAnswersList(state) {
         : "未回答";
     const isOwn = item.teamName === myTeamName;
     const isCorrect =
+      enableCorrectHighlight &&
       correctValue !== null &&
       item.answer !== null &&
       item.answer !== undefined &&
@@ -1049,10 +1059,18 @@ function renderRevealedAnswersList(state) {
     li.className = `revealed-answers-item${isOwn ? " is-own" : ""}${isCorrect ? " is-correct" : ""}`;
     li.innerHTML = `
       <span class="revealed-answers-name">${escapeHtml(item.teamName || "")}${isOwn ? "（あなた）" : ""}</span>
+      ${isCorrect ? '<span class="revealed-answers-badge">ピタリ</span>' : ""}
       <span class="revealed-answers-value">${escapeHtml(percent)}</span>
     `;
     revealedAnswersList.appendChild(li);
   });
+
+  if (showCorrect && correctValue !== null && !forceCorrectHighlight) {
+    revealAnswersHighlightTimer = setTimeout(() => {
+      renderRevealedAnswersList(state, true);
+      revealAnswersHighlightTimer = null;
+    }, getCorrectNeedleRevealDuration(correctValue));
+  }
 }
 
 const TACHO = {

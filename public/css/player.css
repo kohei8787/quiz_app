@@ -1264,6 +1264,22 @@ input:disabled {
   color: #334155;
 }
 
+.revealed-answers-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.8ch;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 480px) {
   .tacho-center-num {
     font-size: 1.45rem;

@@ -807,6 +807,12 @@ function renderTeamLegend(listEl, teams, options = {}) {
     li.appendChild(swatch);
     li.appendChild(name);
     li.appendChild(answer);
+    if (li.classList.contains("is-correct")) {
+      const perfect = document.createElement("span");
+      perfect.className = "result-team-perfect-badge";
+      perfect.textContent = "ピタリ";
+      li.appendChild(perfect);
+    }
     listEl.appendChild(li);
   });
 }
@@ -846,14 +852,19 @@ function renderGauge(state) {
   }));
 
   const mid = Math.ceil(teams.length / 2);
-  renderTeamLegend(resultTeamListLeft, teams.slice(0, mid), {
-    showCorrect,
-    correctValue
-  });
-  renderTeamLegend(resultTeamListRight, teams.slice(mid), {
-    showCorrect,
-    correctValue
-  });
+  const renderLegends = (enableCorrectHighlight) => {
+    renderTeamLegend(resultTeamListLeft, teams.slice(0, mid), {
+      showCorrect: enableCorrectHighlight,
+      correctValue
+    });
+    renderTeamLegend(resultTeamListRight, teams.slice(mid), {
+      showCorrect: enableCorrectHighlight,
+      correctValue
+    });
+  };
+
+  // 正解発表時は、正解%の表示タイミングまではピタリ強調を出さない
+  renderLegends(!showCorrect);
 
   const teamMarkers = teams
     .filter((team) => team.answer !== null)
@@ -876,6 +887,7 @@ function renderGauge(state) {
     correctAnswerText.textContent = "正解: --";
     correctAnswerText.hidden = true;
     revealCorrectTextTimer = setTimeout(() => {
+      renderLegends(true);
       correctAnswerText.textContent = `正解: ${correctValue}%`;
       correctAnswerText.hidden = false;
       revealCorrectTextTimer = null;
