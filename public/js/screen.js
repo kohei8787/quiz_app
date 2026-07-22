@@ -288,6 +288,9 @@ window.addEventListener("resize", () => {
   if (resultView.style.display !== "none") {
     scheduleFitResultTeamLegends();
   }
+  if (document.body.classList.contains("results-announced-active")) {
+    scheduleFitPodiumNames();
+  }
   if (!surveyCard.hidden) {
     fitSurveyOptionLabels();
   }
@@ -515,7 +518,7 @@ function renderPodium(state, shouldShow) {
         <div class="podium-block">
           <div class="podium-face podium-face--top" aria-hidden="true"></div>
           <div class="podium-face podium-face--front">
-            <span class="podium-rank">${place}</span>
+            <span class="podium-rank">${place}位</span>
           </div>
           <div class="podium-face podium-face--side" aria-hidden="true"></div>
         </div>
@@ -531,7 +534,7 @@ function renderPodium(state, shouldShow) {
       <div class="podium-block">
         <div class="podium-face podium-face--top" aria-hidden="true"></div>
         <div class="podium-face podium-face--front">
-          <span class="podium-rank">${place}</span>
+          <span class="podium-rank">${place}位</span>
         </div>
         <div class="podium-face podium-face--side" aria-hidden="true"></div>
       </div>
@@ -552,6 +555,37 @@ function renderPodium(state, shouldShow) {
         el.classList.add("is-visible");
       }
     });
+    fitPodiumNames();
+  });
+}
+
+const PODIUM_NAME_MAX_FONT_PX = 54;
+const PODIUM_NAME_MIN_FONT_PX = 14;
+
+function scheduleFitPodiumNames() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(fitPodiumNames);
+  });
+}
+
+function fitPodiumNames() {
+  if (!podium || resultsSection.style.display === "none") {
+    return;
+  }
+
+  const names = podium.querySelectorAll(".podium-name");
+  names.forEach((nameEl) => {
+    nameEl.style.fontSize = "";
+    const computed = parseFloat(getComputedStyle(nameEl).fontSize);
+    let size = Number.isFinite(computed)
+      ? Math.min(PODIUM_NAME_MAX_FONT_PX, computed)
+      : PODIUM_NAME_MAX_FONT_PX;
+    nameEl.style.fontSize = `${size}px`;
+
+    while (size > PODIUM_NAME_MIN_FONT_PX && nameEl.scrollWidth > nameEl.clientWidth + 1) {
+      size -= 1;
+      nameEl.style.fontSize = `${size}px`;
+    }
   });
 }
 
