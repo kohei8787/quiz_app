@@ -274,3 +274,14 @@ body {
 .team-offline {
   color: #94a3b8;
 }
+
+/* スマホ：2列を1列に */
+@media (max-width: 768px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-container {
+    padding: 16px;
+  }
+}
