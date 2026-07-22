@@ -25,6 +25,7 @@ const resultsSection = document.getElementById("resultsSection");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+let revealCorrectTextTimer = null;
 const finishedThanks = document.getElementById("finishedThanks");
 
 // チーム識別色（メーター上のドット・左右凡例で共通）
@@ -811,6 +812,11 @@ function renderTeamLegend(listEl, teams, options = {}) {
 }
 
 function renderGauge(state) {
+  if (revealCorrectTextTimer) {
+    clearTimeout(revealCorrectTextTimer);
+    revealCorrectTextTimer = null;
+  }
+
   gaugeContainer.innerHTML = "";
   resultTeamListLeft.innerHTML = "";
   resultTeamListRight.innerHTML = "";
@@ -867,8 +873,13 @@ function renderGauge(state) {
     correctAnswerText.textContent = "例題（正解発表なし）";
     correctAnswerText.hidden = false;
   } else if (showCorrect && correctValue !== null) {
-    correctAnswerText.textContent = `正解: ${correctValue}%`;
-    correctAnswerText.hidden = false;
+    correctAnswerText.textContent = "正解: --";
+    correctAnswerText.hidden = true;
+    revealCorrectTextTimer = setTimeout(() => {
+      correctAnswerText.textContent = `正解: ${correctValue}%`;
+      correctAnswerText.hidden = false;
+      revealCorrectTextTimer = null;
+    }, getCorrectNeedleRevealDuration(correctValue));
   } else {
     correctAnswerText.textContent = "正解: --";
     correctAnswerText.hidden = true;
@@ -1041,6 +1052,15 @@ function animateCorrectNeedle(needle, targetValue) {
     needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
     needle.style.transform = `rotate(${targetDeg}deg)`;
   }, 1370);
+}
+
+function getCorrectNeedleRevealDuration(targetValue) {
+  const target = clampAnswer(targetValue);
+  const bufferMs = 420;
+  if (target <= 85) {
+    return 1220 + 620 + bufferMs;
+  }
+  return 1370 + 760 + bufferMs;
 }
 
 function createNeedleGroup(className, value) {

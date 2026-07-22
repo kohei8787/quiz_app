@@ -54,6 +54,7 @@ const joinedTeamNameDisplay = document.getElementById("joinedTeamNameDisplay");
 const editTeamButtonAfterJoin = document.getElementById("editTeamButtonAfterJoin");
 const waitingMessage = document.querySelector(".waiting-message");
 const backgroundVideo = document.querySelector(".background-video-finished");
+let revealSummaryTimer = null;
 
 const OPTION_BADGE_SRC = {
   A: "/data/image/components/square-a.png",
@@ -892,6 +893,11 @@ function renderPodium(state, shouldShow) {
 }
 
 function renderGauge(state, myTeam) {
+  if (revealSummaryTimer) {
+    clearTimeout(revealSummaryTimer);
+    revealSummaryTimer = null;
+  }
+
   gaugeContainer.innerHTML = "";
 
   if (!state.revealedAnswers || state.revealedAnswers.length === 0) {
@@ -964,6 +970,34 @@ function renderGauge(state, myTeam) {
   if (summaryMyAnswer) {
     summaryMyAnswer.textContent = answerText;
   }
+  const nextCurrentScoreText = myTeam ? `${myTeam.score} pt` : "-- pt";
+
+  if (showCorrect && correctValue !== null) {
+    if (summaryCorrect) {
+      summaryCorrect.textContent = "--%";
+    }
+    if (summaryScore) {
+      summaryScore.textContent = "-- pt";
+    }
+    if (summaryCurrentScore) {
+      summaryCurrentScore.textContent = "-- pt";
+    }
+
+    revealSummaryTimer = setTimeout(() => {
+      if (summaryCorrect) {
+        summaryCorrect.textContent = correctText;
+      }
+      if (summaryScore) {
+        summaryScore.textContent = questionScoreText;
+      }
+      if (summaryCurrentScore) {
+        summaryCurrentScore.textContent = nextCurrentScoreText;
+      }
+      revealSummaryTimer = null;
+    }, getCorrectNeedleRevealDuration(correctValue));
+    return;
+  }
+
   if (summaryCorrect) {
     summaryCorrect.textContent = correctText;
   }
@@ -971,7 +1005,7 @@ function renderGauge(state, myTeam) {
     summaryScore.textContent = questionScoreText;
   }
   if (summaryCurrentScore) {
-    summaryCurrentScore.textContent = myTeam ? `${myTeam.score} pt` : "-- pt";
+    summaryCurrentScore.textContent = nextCurrentScoreText;
   }
 }
 
@@ -1190,6 +1224,15 @@ function animateCorrectNeedle(needle, targetValue) {
     needle.style.transition = "transform 760ms cubic-bezier(0.18, 0, 0.2, 1)";
     needle.style.transform = `rotate(${targetDeg}deg)`;
   }, 1370);
+}
+
+function getCorrectNeedleRevealDuration(targetValue) {
+  const target = clampAnswer(targetValue);
+  const bufferMs = 420;
+  if (target <= 85) {
+    return 1220 + 620 + bufferMs;
+  }
+  return 1370 + 760 + bufferMs;
 }
 
 function createNeedleGroup(className, value) {
