@@ -35,7 +35,7 @@ body {
 
 /* 参加受付中は背景画像を表示 */
 body.waiting-background {
-  background-color: #0d3d28;
+  background-color: #026a51;
 }
 
 body.waiting-background .background-layer {
@@ -48,7 +48,7 @@ body.waiting-background .background-image-waiting {
 
 /* 出題〜結果発表はサイド背景を表示 */
 body.event-background {
-  background-color: #c8ddd4;
+  background-color: #a9e2c5;
 }
 
 body.event-background .background-layer {
@@ -65,7 +65,7 @@ body.event-background #status {
 
 /* イベント終了は last 背景を表示 */
 body.finished-background {
-  background-color: #b8d84a;
+  background-color: #5aee98;
 }
 
 body.finished-background .background-layer {
