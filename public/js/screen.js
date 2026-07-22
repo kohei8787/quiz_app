@@ -365,6 +365,7 @@ socket.on("stateUpdated", (state) => {
   document.body.classList.toggle("finished-background", showFinishedView);
   document.body.classList.toggle("result-reveal-active", showResultView);
   document.body.classList.toggle("ranking-revealed-active", showRankingView);
+  document.body.classList.toggle("results-announced-active", showResultsView);
 
   if (showWaiting) {
     scheduleFitTeamList();
