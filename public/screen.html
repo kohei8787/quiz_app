@@ -6,7 +6,7 @@
   <title>スクリーン表示</title>
 
   <!-- スクリーン表示画面専用のCSS（プロジェクター向け大画面） -->
-  <link rel="stylesheet" href="/css/screen.css?v=2" />
+  <link rel="stylesheet" href="/css/screen.css?v=21" />
 </head>
 <body class="waiting-background">
   <div class="background-layer" aria-hidden="true">
@@ -20,11 +20,21 @@
       src="/data/image/background/screen_bg_side3.png"
       alt=""
     />
+    <img
+      class="background-image background-image-finished"
+      src="/data/image/background/screen_bg_last.png"
+      alt=""
+    />
   </div>
 
   <main class="container">
     <!-- 現在の状態を表示する場所 -->
     <p id="status">接続中...</p>
+
+    <!-- イベント終了時のメッセージ（背景上に大きく表示） -->
+    <h1 id="finishedThanks" class="finished-thanks" style="display: none;">
+      ご参加ありがとうございました
+    </h1>
 
     <!-- 参加受付中に表示するエリア -->
     <div id="waitingSection" class="card">
@@ -74,23 +84,19 @@
 
     <!-- 順位発表（問題ごとの順位） -->
     <div id="rankingView" class="card" style="display: none;">
-      <h2 id="rankingTitle">順位発表</h2>
       <ul id="rankingList"></ul>
     </div>
 
     <!-- 結果発表（1〜3位セレモニー） -->
-    <div id="resultsView" class="card results-view" style="display: none;">
-      <h2>結果発表</h2>
-      <p class="results-subtitle">上位表彰</p>
-      <div id="podium" class="podium" aria-live="polite"></div>
-    </div>
-
-    <!-- イベント終了時のお礼画面 -->
-    <div id="finishedView" class="card finished-view" style="display: none;">
-      <h2 id="finishedTitle">ご参加ありがとうございました</h2>
-      <p class="finished-message">本日のクイズは終了です</p>
-      <h3 class="finished-ranking-heading">最終順位</h3>
-      <ul id="finishedRankingList"></ul>
+    <div id="resultsSection" class="results-section" style="display: none;">
+      <img
+        class="results-title-image"
+        src="/data/image/components/quiz-result.png"
+        alt="結果発表"
+      />
+      <div id="resultsView" class="card results-view">
+        <div id="podium" class="podium" aria-live="polite"></div>
+      </div>
     </div>
   </main>
 
@@ -98,6 +104,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=23"></script>
+  <script src="/js/screen.js?v=31"></script>
 </body>
 </html>

@@ -10,7 +10,6 @@ const timerValue = document.getElementById("timerValue");
 const correctAnswerText = document.getElementById("correctAnswerText");
 const gaugeContainer = document.getElementById("gaugeContainer");
 const rankingList = document.getElementById("rankingList");
-const rankingTitle = document.getElementById("rankingTitle");
 const waitingSection = document.getElementById("waitingSection");
 const questionView = document.getElementById("questionView");
 const surveyCard = document.getElementById("surveyCard");
@@ -21,12 +20,12 @@ const resultTeamListLeft = document.getElementById("resultTeamListLeft");
 const resultTeamListRight = document.getElementById("resultTeamListRight");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
-const finishedView = document.getElementById("finishedView");
-const finishedRankingList = document.getElementById("finishedRankingList");
 const resultsView = document.getElementById("resultsView");
+const resultsSection = document.getElementById("resultsSection");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+const finishedThanks = document.getElementById("finishedThanks");
 
 // チーム識別色（メーター上のドット・左右凡例で共通）
 const TEAM_COLORS = [
@@ -287,6 +286,12 @@ window.addEventListener("resize", () => {
   if (resultView.style.display !== "none") {
     scheduleFitResultTeamLegends();
   }
+  if (document.body.classList.contains("ranking-revealed-active")) {
+    scheduleFitRankingList();
+  }
+  if (document.body.classList.contains("results-announced-active")) {
+    scheduleFitPodiumNames();
+  }
   if (!surveyCard.hidden) {
     fitSurveyOptionLabels();
   }
@@ -329,18 +334,20 @@ socket.on("stateUpdated", (state) => {
   const showSurveyResultsView = state.status === "survey_results";
   const showRankingView = state.status === "ranking_revealed";
   const showResultsView = state.status === "results_announced";
-  // イベント終了：参加受付ではなくお礼画面を表示
   const showFinishedView = state.status === "finished";
 
   waitingSection.style.display = showWaiting ? "flex" : "none";
   questionView.style.display = showQuestionView ? "flex" : "none";
   resultView.style.display = showResultView ? "flex" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
-  rankingView.style.display = showRankingView ? "block" : "none";
-  resultsView.style.display = showResultsView ? "block" : "none";
-  finishedView.style.display = showFinishedView ? "block" : "none";
-  // 出題中と回答公開・正解発表中はカード側に見出しがあるため、上部statusは隠す
-  statusEl.style.display = showQuestionView || showResultView ? "none" : "";
+  rankingView.style.display = showRankingView ? "flex" : "none";
+  resultsSection.style.display = showResultsView ? "flex" : "none";
+  finishedThanks.style.display = showFinishedView ? "block" : "none";
+  // 出題中・回答公開/正解発表・結果発表・終了は専用表示のため、上部statusは隠す
+  statusEl.style.display =
+    showQuestionView || showResultView || showResultsView || showFinishedView
+      ? "none"
+      : "";
 
   // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
   const useEventBackground =
@@ -354,10 +361,15 @@ socket.on("stateUpdated", (state) => {
     state.status === "results_announced";
   document.body.classList.toggle("waiting-background", showWaiting);
   document.body.classList.toggle("event-background", useEventBackground);
+  document.body.classList.toggle("finished-background", showFinishedView);
   document.body.classList.toggle("result-reveal-active", showResultView);
+  document.body.classList.toggle("ranking-revealed-active", showRankingView);
 
   if (showWaiting) {
     scheduleFitTeamList();
+  }
+  if (showRankingView) {
+    scheduleFitRankingList();
   }
 
   if (state.surveyImageUrl) {
@@ -387,8 +399,7 @@ socket.on("stateUpdated", (state) => {
   } else if (state.status === "survey_results") {
     statusEl.textContent = "アンケート結果";
   } else if (state.status === "ranking_revealed") {
-    statusEl.textContent = "順位発表";
-    rankingTitle.textContent = "順位発表";
+    statusEl.textContent = "ランキング";
   } else if (state.status === "results_announced") {
     statusEl.textContent = "結果発表";
   } else if (state.status === "finished") {
@@ -439,8 +450,6 @@ socket.on("stateUpdated", (state) => {
   renderRanking(rankingList, state, state.status === "ranking_revealed");
   // 結果発表（1〜3位）
   renderPodium(state, showResultsView);
-  // 終了画面の最終順位
-  renderRanking(finishedRankingList, state, state.status === "finished");
 });
 
 function renderRanking(listEl, state, shouldShow) {
@@ -450,11 +459,112 @@ function renderRanking(listEl, state, shouldShow) {
     return;
   }
 
+  const isScreenRanking = listEl === rankingList;
+
   state.ranking.forEach((team, index) => {
+    const place = index + 1;
     const li = document.createElement("li");
-    li.textContent = `${index + 1}位 ${team.name} - ${team.score}点`;
+    if (isScreenRanking) {
+      if (place <= 3) {
+        li.className = `ranking-item ranking-item--${place}`;
+      } else {
+        li.className = "ranking-item ranking-item--rest";
+      }
+
+      const rank = document.createElement("span");
+      rank.className = "ranking-item-rank";
+      rank.textContent = `${place}位`;
+
+      const name = document.createElement("span");
+      name.className = "ranking-item-name";
+      name.textContent = team.name;
+
+      const score = document.createElement("span");
+      score.className = "ranking-item-score";
+      score.textContent = `${team.score} pt`;
+
+      li.appendChild(rank);
+      li.appendChild(name);
+      li.appendChild(score);
+    } else {
+      li.textContent = `${place}位 ${team.name} - ${team.score}点`;
+    }
     listEl.appendChild(li);
   });
+
+  if (isScreenRanking) {
+    scheduleFitRankingList();
+  }
+}
+
+const RANKING_REST_MAX_H = 56;
+const RANKING_REST_MIN_H = 36;
+const RANKING_REST_MAX_FONT = 32;
+const RANKING_REST_MIN_FONT = 14;
+const RANKING_GAP_MAX = 12;
+const RANKING_GAP_MIN = 6;
+
+function scheduleFitRankingList() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(fitRankingList);
+  });
+}
+
+function rankingListOverflows() {
+  return rankingList.scrollHeight > rankingList.clientHeight + 1;
+}
+
+function fitRankingList() {
+  if (!rankingList || rankingView.style.display === "none") {
+    return;
+  }
+
+  const restItems = rankingList.querySelectorAll(".ranking-item--rest");
+  rankingList.classList.remove("is-two-col");
+  rankingList.style.removeProperty("--ranking-gap");
+  rankingList.style.removeProperty("--ranking-rest-h");
+  rankingList.style.removeProperty("--ranking-rest-pad-y");
+  rankingList.style.removeProperty("--ranking-rest-font");
+
+  if (restItems.length === 0) {
+    return;
+  }
+
+  // 1列で入りきらなければ 4位以降を2列に
+  if (rankingListOverflows()) {
+    rankingList.classList.add("is-two-col");
+  }
+
+  // それでも足りなければ 4位以降の高さ・余白・フォントを縮小
+  if (!rankingListOverflows()) {
+    return;
+  }
+
+  let gap = RANKING_GAP_MAX;
+  let height = RANKING_REST_MAX_H;
+  let fontPx = RANKING_REST_MAX_FONT;
+
+  for (let step = 0; step < 40; step += 1) {
+    const padY = Math.max(4, Math.floor(height * 0.22));
+    rankingList.style.setProperty("--ranking-gap", `${gap}px`);
+    rankingList.style.setProperty("--ranking-rest-h", `${height}px`);
+    rankingList.style.setProperty("--ranking-rest-pad-y", `${padY}px`);
+    rankingList.style.setProperty("--ranking-rest-font", `${fontPx}px`);
+
+    if (!rankingListOverflows()) {
+      break;
+    }
+
+    if (height > RANKING_REST_MIN_H) {
+      height -= 2;
+    } else if (gap > RANKING_GAP_MIN) {
+      gap -= 1;
+    } else if (fontPx > RANKING_REST_MIN_FONT) {
+      fontPx -= 1;
+    } else {
+      break;
+    }
+  }
 }
 
 function renderPodium(state, shouldShow) {
@@ -513,7 +623,7 @@ function renderPodium(state, shouldShow) {
         <div class="podium-block">
           <div class="podium-face podium-face--top" aria-hidden="true"></div>
           <div class="podium-face podium-face--front">
-            <span class="podium-rank">${place}</span>
+            <span class="podium-rank">${place}位</span>
           </div>
           <div class="podium-face podium-face--side" aria-hidden="true"></div>
         </div>
@@ -529,7 +639,7 @@ function renderPodium(state, shouldShow) {
       <div class="podium-block">
         <div class="podium-face podium-face--top" aria-hidden="true"></div>
         <div class="podium-face podium-face--front">
-          <span class="podium-rank">${place}</span>
+          <span class="podium-rank">${place}位</span>
         </div>
         <div class="podium-face podium-face--side" aria-hidden="true"></div>
       </div>
@@ -550,6 +660,37 @@ function renderPodium(state, shouldShow) {
         el.classList.add("is-visible");
       }
     });
+    fitPodiumNames();
+  });
+}
+
+const PODIUM_NAME_MAX_FONT_PX = 54;
+const PODIUM_NAME_MIN_FONT_PX = 14;
+
+function scheduleFitPodiumNames() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(fitPodiumNames);
+  });
+}
+
+function fitPodiumNames() {
+  if (!podium || resultsSection.style.display === "none") {
+    return;
+  }
+
+  const names = podium.querySelectorAll(".podium-name");
+  names.forEach((nameEl) => {
+    nameEl.style.fontSize = "";
+    const computed = parseFloat(getComputedStyle(nameEl).fontSize);
+    let size = Number.isFinite(computed)
+      ? Math.min(PODIUM_NAME_MAX_FONT_PX, computed)
+      : PODIUM_NAME_MAX_FONT_PX;
+    nameEl.style.fontSize = `${size}px`;
+
+    while (size > PODIUM_NAME_MIN_FONT_PX && nameEl.scrollWidth > nameEl.clientWidth + 1) {
+      size -= 1;
+      nameEl.style.fontSize = `${size}px`;
+    }
   });
 }
 
