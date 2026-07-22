@@ -24,6 +24,7 @@ const rankingView = document.getElementById("rankingView");
 const finishedView = document.getElementById("finishedView");
 const finishedRankingList = document.getElementById("finishedRankingList");
 const resultsView = document.getElementById("resultsView");
+const resultsSection = document.getElementById("resultsSection");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
@@ -337,10 +338,11 @@ socket.on("stateUpdated", (state) => {
   resultView.style.display = showResultView ? "flex" : "none";
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "block" : "none";
-  resultsView.style.display = showResultsView ? "block" : "none";
+  resultsSection.style.display = showResultsView ? "flex" : "none";
   finishedView.style.display = showFinishedView ? "block" : "none";
-  // 出題中と回答公開・正解発表中はカード側に見出しがあるため、上部statusは隠す
-  statusEl.style.display = showQuestionView || showResultView ? "none" : "";
+  // 出題中・回答公開/正解発表・結果発表は専用見出しがあるため、上部statusは隠す
+  statusEl.style.display =
+    showQuestionView || showResultView || showResultsView ? "none" : "";
 
   // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
   const useEventBackground =

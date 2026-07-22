@@ -756,16 +756,30 @@ body.result-reveal-active .container {
 }
 
 /* 結果発表（1〜3位ポディウム） */
-.results-view {
-  overflow: hidden;
-  padding-top: 40px;
-  padding-bottom: 48px;
+.results-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 2vw, 28px);
+  width: 100%;
 }
 
-.results-subtitle {
-  margin: 0 0 28px;
-  color: #94a3b8;
-  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+.results-title-image {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  margin: 0 auto;
+}
+
+.results-view {
+  overflow: hidden;
+  width: 100%;
+  padding-top: 40px;
+  padding-bottom: 48px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  box-sizing: border-box;
 }
 
 .podium {

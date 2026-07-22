@@ -79,10 +79,15 @@
     </div>
 
     <!-- 結果発表（1〜3位セレモニー） -->
-    <div id="resultsView" class="card results-view" style="display: none;">
-      <h2>結果発表</h2>
-      <p class="results-subtitle">上位表彰</p>
-      <div id="podium" class="podium" aria-live="polite"></div>
+    <div id="resultsSection" class="results-section" style="display: none;">
+      <img
+        class="results-title-image"
+        src="/data/image/components/quiz-result.png"
+        alt="結果発表"
+      />
+      <div id="resultsView" class="card results-view">
+        <div id="podium" class="podium" aria-live="polite"></div>
+      </div>
     </div>
 
     <!-- イベント終了時のお礼画面 -->
@@ -98,6 +103,6 @@
   <script src="/socket.io/socket.io.js"></script>
 
   <!-- スクリーン画面専用のJavaScript -->
-  <script src="/js/screen.js?v=23"></script>
+  <script src="/js/screen.js?v=24"></script>
 </body>
 </html>
