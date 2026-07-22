@@ -149,7 +149,8 @@ function renderSurveyCard(question) {
       const label = item.querySelector(".survey-option-label");
       if (label) {
         label.style.alignSelf = "center";
-        label.style.display = "block";
+        label.style.display = "flex";
+        label.style.alignItems = "center";
         label.style.minHeight = "clamp(40px, 4.5vw, 56px)";
       }
     });
