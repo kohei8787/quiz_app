@@ -682,7 +682,7 @@ body.result-reveal-active .container {
   height: auto;
   margin-top: 12px;
   border-radius: 12px;
-  background: #fff;
+  background: transparent;
 }
 
 .survey-caption {
