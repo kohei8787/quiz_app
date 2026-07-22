@@ -20,13 +20,12 @@ const resultTeamListLeft = document.getElementById("resultTeamListLeft");
 const resultTeamListRight = document.getElementById("resultTeamListRight");
 const surveyResultsView = document.getElementById("surveyResultsView");
 const rankingView = document.getElementById("rankingView");
-const finishedView = document.getElementById("finishedView");
-const finishedRankingList = document.getElementById("finishedRankingList");
 const resultsView = document.getElementById("resultsView");
 const resultsSection = document.getElementById("resultsSection");
 const podium = document.getElementById("podium");
 const resultTitle = document.getElementById("resultTitle");
 const surveyImage = document.getElementById("surveyImage");
+const finishedThanks = document.getElementById("finishedThanks");
 
 // チーム識別色（メーター上のドット・左右凡例で共通）
 const TEAM_COLORS = [
@@ -335,7 +334,6 @@ socket.on("stateUpdated", (state) => {
   const showSurveyResultsView = state.status === "survey_results";
   const showRankingView = state.status === "ranking_revealed";
   const showResultsView = state.status === "results_announced";
-  // イベント終了：参加受付ではなくお礼画面を表示
   const showFinishedView = state.status === "finished";
 
   waitingSection.style.display = showWaiting ? "flex" : "none";
@@ -344,10 +342,12 @@ socket.on("stateUpdated", (state) => {
   surveyResultsView.style.display = showSurveyResultsView ? "block" : "none";
   rankingView.style.display = showRankingView ? "flex" : "none";
   resultsSection.style.display = showResultsView ? "flex" : "none";
-  finishedView.style.display = showFinishedView ? "block" : "none";
-  // 出題中・回答公開/正解発表・結果発表は専用見出しがあるため、上部statusは隠す
+  finishedThanks.style.display = showFinishedView ? "block" : "none";
+  // 出題中・回答公開/正解発表・結果発表・終了は専用表示のため、上部statusは隠す
   statusEl.style.display =
-    showQuestionView || showResultView || showResultsView ? "none" : "";
+    showQuestionView || showResultView || showResultsView || showFinishedView
+      ? "none"
+      : "";
 
   // 参加受付中は待機背景、出題〜結果発表はサイド背景（下端合わせ）
   const useEventBackground =
@@ -361,6 +361,7 @@ socket.on("stateUpdated", (state) => {
     state.status === "results_announced";
   document.body.classList.toggle("waiting-background", showWaiting);
   document.body.classList.toggle("event-background", useEventBackground);
+  document.body.classList.toggle("finished-background", showFinishedView);
   document.body.classList.toggle("result-reveal-active", showResultView);
   document.body.classList.toggle("ranking-revealed-active", showRankingView);
 
@@ -449,8 +450,6 @@ socket.on("stateUpdated", (state) => {
   renderRanking(rankingList, state, state.status === "ranking_revealed");
   // 結果発表（1〜3位）
   renderPodium(state, showResultsView);
-  // 終了画面の最終順位
-  renderRanking(finishedRankingList, state, state.status === "finished");
 });
 
 function renderRanking(listEl, state, shouldShow) {
