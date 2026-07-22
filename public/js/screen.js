@@ -803,28 +803,40 @@ function renderTachometer({ teamMarkers, correctValue, showCorrect }) {
     const nx = Math.cos(rad);
     const ny = -Math.sin(rad);
     const inset = 4;
-    const halfLen = 7;
+    const halfLen = 11;
     const cx = point.x - nx * inset;
     const cy = point.y - ny * inset;
+    const angleDeg = (Math.atan2(ny, nx) * 180) / Math.PI;
+    const outerH = 7.2;
+    const innerH = 5.6;
+    const width = halfLen * 2;
 
-    const outline = createSvgEl("line", {
-      x1: cx - nx * halfLen,
-      y1: cy - ny * halfLen,
-      x2: cx + nx * halfLen,
-      y2: cy + ny * halfLen,
-      class: "tacho-team-marker-outline"
-    });
-    const bar = createSvgEl("line", {
-      x1: cx - nx * halfLen,
-      y1: cy - ny * halfLen,
-      x2: cx + nx * halfLen,
-      y2: cy + ny * halfLen,
-      class: "tacho-team-marker"
+    svg.appendChild(
+      createSvgEl("rect", {
+        x: cx - width / 2,
+        y: cy - outerH / 2,
+        width,
+        height: outerH,
+        rx: 2.2,
+        ry: 2.2,
+        class: "tacho-team-marker-outline",
+        transform: `rotate(${angleDeg} ${cx} ${cy})`
+      })
+    );
+
+    const bar = createSvgEl("rect", {
+      x: cx - width / 2,
+      y: cy - innerH / 2,
+      width,
+      height: innerH,
+      rx: 1.6,
+      ry: 1.6,
+      class: "tacho-team-marker",
+      transform: `rotate(${angleDeg} ${cx} ${cy})`
     });
     if (marker.color) {
-      bar.style.stroke = marker.color;
+      bar.style.fill = marker.color;
     }
-    svg.appendChild(outline);
     svg.appendChild(bar);
   });
 
