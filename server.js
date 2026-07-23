@@ -387,9 +387,9 @@ function updateScores() {
     const diff = Math.abs(answer - correctAnswer);
     team.score = team.score - diff;
 
-    // 完全一致なら50点加算
+    // 完全一致なら30点加算
     if (answer === correctAnswer) {
-      team.score += 50;
+      team.score += 30;
     }
   });
 
