@@ -963,7 +963,7 @@ function renderGauge(state, myTeam) {
     const diff = Math.abs(myAnswer - state.correctAnswer);
     let delta = -diff;
     if (myAnswer === state.correctAnswer) {
-      delta += 50;
+      delta += 30;
     }
     questionScoreText = `${delta >= 0 ? "+" + delta : delta} pt`;
   }
